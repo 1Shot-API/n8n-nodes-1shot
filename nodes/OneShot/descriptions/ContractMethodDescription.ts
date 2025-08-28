@@ -17,7 +17,7 @@ export const contractMethodOperations: INodeProperties[] = [
 				name: 'Assure Contract Methods From Prompt',
 				value: 'assureContractMethodsFromPrompt',
 				description:
-					'Make sure you have a set of Contract Methods ready to use based on your chosen Prompt',
+					'This will make sure you have a set of Contract Methods ready to use based on your chosen Prompt',
 				action: 'Assure contract methods from prompt',
 			},
 			{
@@ -25,51 +25,51 @@ export const contractMethodOperations: INodeProperties[] = [
 				value: 'encode',
 				description:
 					'Encode a contract method call. This produces the calldata for the contract method, which is sometimes required for other contract methods.',
-				action: 'Encode a contract method call',
+				action: 'Encode a smart contract method call',
 			},
 			{
 				name: 'Estimate',
 				value: 'estimate',
 				description: 'Get an estimate of the gas cost of a contract method',
-				action: 'Estimate the gas cost of a contract method',
+				action: 'Estimate the gas cost of a smart contract method',
 			},
 			{
 				name: 'Execute',
 				value: 'execute',
-				description: 'Execute a contract method on the blockchain',
-				action: 'Execute a contract method',
+				description: 'Execute a smart contract method on the blockchain',
+				action: 'Execute a smart contract method',
 			},
 			{
 				name: 'Execute as Delegator',
 				value: 'executeAsDelegator',
 				description:
-					'Execute a contract method on the blockchain using a stored ERC-7702 delgation',
-				action: 'Execute a contract method as delegator',
+					'Execute a smart contract method on the blockchain using a stored ERC-7710 delegation',
+				action: 'Execute a smart contract method as delegator',
 			},
 			{
 				name: 'Get',
 				value: 'get',
-				description: 'Get a single contract method',
-				action: 'Get contract method',
+				description: 'Get a single smart contract method',
+				action: 'Get a smart contract method',
 			},
 			{
 				name: 'List',
 				value: 'list',
-				description: 'List all contract methods',
-				action: 'List all contract methods',
+				description: 'List all smart contract methods',
+				action: 'List all smart contract methods',
 			},
 			{
 				name: 'Read',
 				value: 'read',
-				description: 'Read data from a view or pure function',
-				action: 'Read data from a function',
+				description: 'Read data from a smart contract view or pure function',
+				action: 'Read data from a smart contract function',
 			},
 			{
 				name: 'Simulate',
 				value: 'simulate',
 				description:
-					'Simulate a contract method call and see if it would succeed with the current state of the chain',
-				action: 'Simulate a contract method call',
+					'Simulate a smart contract method call and see if it would succeed with the current state of the chain',
+				action: 'Simulate a smart contract method call',
 			},
 		],
 		default: 'execute',
@@ -140,7 +140,7 @@ const contractMethodFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'The address of the delagator wallet to use for the contract method',
+		description: 'The address of the delegator wallet to use for the contract method',
 	},
 	{
 		displayName: 'Additional Fields',
