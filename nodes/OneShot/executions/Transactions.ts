@@ -11,6 +11,9 @@ export async function listTransactionsOperation(context: IExecuteFunctions, inde
 	const contractMethodId = context.getNodeParameter('contractMethodId', index) as string;
 	const apiCredentialId = context.getNodeParameter('apiCredentialId', index) as string;
 	const userId = context.getNodeParameter('userId', index) as string;
+	const memo = context.getNodeParameter('memo', index) as string;
+	const createdAfter = context.getNodeParameter('createdAfter', index) as number;
+	const createdBefore = context.getNodeParameter('createdBefore', index) as number;
 
 	return await listTransactions(
 		context,
@@ -22,6 +25,9 @@ export async function listTransactionsOperation(context: IExecuteFunctions, inde
 		contractMethodId || undefined,
 		apiCredentialId || undefined,
 		userId || undefined,
+		memo || undefined,
+		createdAfter || undefined,
+		createdBefore || undefined,
 	);
 }
 
@@ -40,6 +46,9 @@ export async function listTransactions(
 	contractMethodId?: string,
 	apiCredentialId?: string,
 	userId?: string,
+	memo?: string,
+	createdAfter?: number,
+	createdBefore?: number,
 ): Promise<PagedResponse<Transaction>> {
 	try {
 		const credentials = await context.getCredentials('oneShotOAuth2Api');
@@ -65,6 +74,9 @@ export async function listTransactions(
 						contractMethodId,
 						apiCredentialId,
 						userId,
+						memo,
+						createdAfter,
+						createdBefore,
 					},
 					headers: {
 						Accept: 'application/json',

@@ -16,8 +16,8 @@ export const transactionOperations: INodeProperties[] = [
 			{
 				name: 'List Transactions',
 				value: 'list',
-				description: 'List Transactions with filters',
-				action: 'List transactions',
+				description: 'List 1Shot API transactions with optional filters',
+				action: 'List Transactions',
 			},
 			{
 				name: 'Get Transaction',
@@ -136,6 +136,47 @@ const transactionFields: INodeProperties[] = [
 		},
 		default: '',
 		description: 'Filter transactions by user ID',
+	},
+	{
+		displayName: 'Memo',
+		name: 'memo',
+		type: 'string',
+		displayOptions: {
+			show: {
+				resource: ['transactions'],
+				operation: ['list'],
+			},
+		},
+		default: '',
+		description: 'Filter by memo text',
+	},
+	{
+		displayName: 'After Time',
+		name: 'createdAfter',
+		type: 'number',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['transactions'],
+				operation: ['list'],
+			},
+		},
+		default: 1,
+		description: 'A unix timestamp to look for transaction after.',
+	},
+	{
+		displayName: 'Before Time',
+		name: 'createdBefore',
+		type: 'number',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['transactions'],
+				operation: ['list'],
+			},
+		},
+		default: 1,
+		description: 'A unix timestamp to look for transaction before.',
 	},
 	{
 		displayName: 'Page Number',
