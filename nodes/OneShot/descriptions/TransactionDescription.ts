@@ -161,7 +161,7 @@ const transactionFields: INodeProperties[] = [
 				operation: ['list'],
 			},
 		},
-		default: 1,
+		default: '',
 		description: 'A unix timestamp to look for transaction after',
 	},
 	{
@@ -175,7 +175,7 @@ const transactionFields: INodeProperties[] = [
 				operation: ['list'],
 			},
 		},
-		default: 1,
+		default: '',
 		description: 'A unix timestamp to look for transaction before',
 	},
 	{
