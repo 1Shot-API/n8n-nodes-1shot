@@ -4,9 +4,9 @@ import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constan
 
 export async function searchPromptsOperation(context: IExecuteFunctions, index: number) {
 	const query = context.getNodeParameter('query', index) as string;
-	const chainId = context.getNodeParameter('chainId', index) as EChain;
+	const chainId = context.getNodeParameter('chainId', index) as string;
 
-	return await searchPrompts(context, query, chainId || undefined);
+	return await searchPrompts(context, query, chainId == "all" ? undefined : Number(chainId) as EChain,);
 }
 
 export async function searchPrompts(

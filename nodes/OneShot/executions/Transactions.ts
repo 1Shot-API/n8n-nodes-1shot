@@ -3,10 +3,10 @@ import { EChain, ETransactionStatus, PagedResponse, Transaction } from '../types
 import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constants';
 
 export async function listTransactionsOperation(context: IExecuteFunctions, index: number) {
-	const chainId = context.getNodeParameter('chainId', index) as EChain;
+	const chainId = context.getNodeParameter('chainId', index) as string;
 	const page = context.getNodeParameter('page', index) as number;
 	const pageSize = context.getNodeParameter('pageSize', index) as number;
-	const status = context.getNodeParameter('status', index) as ETransactionStatus;
+	const status = context.getNodeParameter('status', index) as string;
 	const walletId = context.getNodeParameter('walletId', index) as string;
 	const contractMethodId = context.getNodeParameter('contractMethodId', index) as string;
 	const apiCredentialId = context.getNodeParameter('apiCredentialId', index) as string;
@@ -17,10 +17,10 @@ export async function listTransactionsOperation(context: IExecuteFunctions, inde
 
 	return await listTransactions(
 		context,
-		chainId || undefined,
+		chainId == "all" ? undefined : Number(chainId) as EChain,
 		page || undefined,
 		pageSize || undefined,
-		status || undefined,
+		status == "none" ? undefined : status as ETransactionStatus,
 		walletId || undefined,
 		contractMethodId || undefined,
 		apiCredentialId || undefined,

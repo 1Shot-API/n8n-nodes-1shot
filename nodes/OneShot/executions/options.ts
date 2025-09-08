@@ -24,6 +24,34 @@ export async function loadChainOptions(
 	return options;
 }
 
+export async function loadChainOptionsWithAll(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	const options: INodePropertyOptions[] = [];
+
+	const chains = await listChains(
+		this,
+		1, // page
+		1000, // pageSize
+	);
+
+	options.push({
+		name: "All",
+		value: "all",
+		description: "All chains",
+	})
+
+	for (const chain of chains.response) {
+		options.push({
+			name: chain.name,
+			value: chain.chainId,
+			description: `${chain.name} (${chain.chainId}-${chain.type})`,
+		});
+	}
+
+	return options;
+}
+
 export async function loadContractMethodExecutionOptions(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {

@@ -13,6 +13,7 @@ import { promptOperationsFields } from './descriptions/PromptDescription';
 import { transactionOperationsFields } from './descriptions/TransactionDescription';
 import {
 	loadChainOptions,
+	loadChainOptionsWithAll,
 	loadContractMethodAllOptions,
 	loadContractMethodExecutionOptions,
 	loadContractMethodReadOptions,
@@ -128,6 +129,7 @@ export class OneShot implements INodeType {
 	methods = {
 		loadOptions: {
 			loadChainOptions,
+			loadChainOptionsWithAll,
 			loadContractMethodExecutionOptions,
 			loadContractMethodReadOptions,
 			loadContractMethodAllOptions,
