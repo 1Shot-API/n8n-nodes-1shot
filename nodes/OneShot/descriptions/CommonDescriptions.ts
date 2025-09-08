@@ -11,7 +11,7 @@ export function createChain(
 		type: 'options',
 		default: '',
 		typeOptions: {
-			loadOptionsMethod: 'loadChainOptions',
+			loadOptionsMethod: required ? 'loadChainOptions' : 'loadChainOptionsWithAll',
 		},
 		required: required,
 		displayOptions: {

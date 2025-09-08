@@ -17,7 +17,7 @@ export const transactionOperations: INodeProperties[] = [
 				name: 'List Transactions',
 				value: 'list',
 				description: 'List 1Shot API transactions with optional filters',
-				action: 'List Transactions',
+				action: 'List transactions',
 			},
 			{
 				name: 'Get Transaction',

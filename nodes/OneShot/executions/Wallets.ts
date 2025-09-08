@@ -8,14 +8,14 @@ import { EChain, PagedResponse, Wallet } from '../types/1shot';
 import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constants';
 
 export async function listWalletsOperation(context: IExecuteFunctions, index: number) {
-	const chainId = context.getNodeParameter('chainId', index) as EChain;
+	const chainId = context.getNodeParameter('chainId', index) as string;
 	const page = context.getNodeParameter('page', index) as number;
 	const pageSize = context.getNodeParameter('pageSize', index) as number;
 	const name = context.getNodeParameter('name', index) as string;
 
 	return await listWallets(
 		context,
-		chainId || undefined,
+		chainId == "all" ? undefined : Number(chainId) as EChain,
 		page || undefined,
 		pageSize || undefined,
 		name || undefined,

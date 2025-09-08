@@ -14,7 +14,7 @@ import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constan
 import { getTransaction } from './Transactions';
 
 export async function listContractMethodsOperation(context: IExecuteFunctions, index: number) {
-	const chainId = context.getNodeParameter('chainId', index) as EChain;
+	const chainId = context.getNodeParameter('chainId', index) as string;
 	const page = context.getNodeParameter('page', index) as number;
 	const pageSize = context.getNodeParameter('pageSize', index) as number;
 	const name = context.getNodeParameter('name', index) as string;
@@ -24,7 +24,7 @@ export async function listContractMethodsOperation(context: IExecuteFunctions, i
 
 	return await listContractMethods(
 		context,
-		chainId || undefined,
+		chainId == "all" ? undefined : Number(chainId) as EChain,
 		page || undefined,
 		pageSize || undefined,
 		name || undefined,
