@@ -57,7 +57,7 @@ Check out our [documentation](https://docs.1shotapi.com/automation/n8n.html) for
   <img src="/static/n8n-x402.gif" alt="x402 workflow">
 </p>
 
-Try out the [x402 workflow](/x402.json) to see how 1Shot API can simulate and execute onchain transactions. Import the json file directly into an n8n workflow, then authenticate the 1Shot API nodes against your 1Shot API account. Be sure to set the correct *Contract Method Name* in the 1Shot API selector box for both the Simulate and Submit stages as explained in the [tutorial video](https://youtu.be/m3ThthLtj3g). 
+Try out the [x402 workflow](https://n8n.io/workflows/5389-monetize-workflows-with-x402-payment-protocol-and-1shot-api/) to see how 1Shot API can simulate and execute onchain transactions. Import the json file directly into an n8n workflow, then authenticate the 1Shot API nodes against your 1Shot API account. Be sure to set the correct *Contract Method Name* in the 1Shot API selector box for both the Simulate and Submit stages as explained in the [tutorial video](https://youtu.be/m3ThthLtj3g). 
 
 ```sh
 # example curl call to your n8n webhook endpoint
