@@ -259,6 +259,89 @@ export async function readContractMethodOperation(context: IExecuteFunctions, in
 	return await readContractMethod(context, contractMethodId, parsedParams);
 }
 
+export async function executeBatchOperation(context: IExecuteFunctions, index: number) {
+	const contractMethodsData = context.getNodeParameter('contractMethods', index) as any;
+	const walletId = context.getNodeParameter('walletId', index) as string;
+	const additionalFields = context.getNodeParameter('additionalFields', index) as {
+		atomic?: boolean;
+		memo?: string;
+		authorizationList?: string;
+		gasLimit?: string;
+	};
+
+	// Transform the contract methods data to match the API format
+	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
+		const parsedParams = JSON.parse(method.params);
+		const optionalFields = method.optionalFields || {};
+
+		return {
+			contractMethodId: method.contractMethodId,
+			executionIndex: methodIndex,
+			params: parsedParams,
+			contractAddress: optionalFields.contractAddress || undefined,
+			value: optionalFields.value || undefined,
+		};
+	});
+
+	// Parse authorization list if provided
+	let authorizationList;
+	if (additionalFields.authorizationList) {
+		authorizationList = JSON.parse(additionalFields.authorizationList);
+	}
+
+	return await executeBatch(
+		context,
+		contractMethods,
+		walletId,
+		additionalFields.atomic,
+		additionalFields.memo,
+		authorizationList,
+		additionalFields.gasLimit,
+	);
+}
+
+export async function executeAsDelegatorBatchOperation(context: IExecuteFunctions, index: number) {
+	const contractMethodsData = context.getNodeParameter('contractMethods', index) as any;
+	const walletId = context.getNodeParameter('walletId', index) as string;
+	const additionalFields = context.getNodeParameter('additionalFields', index) as {
+		atomic?: boolean;
+		memo?: string;
+		authorizationList?: string;
+		gasLimit?: string;
+	};
+
+	// Transform the contract methods data to match the API format
+	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
+		const parsedParams = JSON.parse(method.params);
+		const optionalFields = method.optionalFields || {};
+
+		return {
+			contractMethodId: method.contractMethodId,
+			executionIndex: methodIndex,
+			params: parsedParams,
+			delegatorAddress: method.delegatorAddress,
+			contractAddress: optionalFields.contractAddress || undefined,
+			value: optionalFields.value || undefined,
+		};
+	});
+
+	// Parse authorization list if provided
+	let authorizationList;
+	if (additionalFields.authorizationList) {
+		authorizationList = JSON.parse(additionalFields.authorizationList);
+	}
+
+	return await executeAsDelegatorBatch(
+		context,
+		contractMethods,
+		walletId,
+		additionalFields.atomic,
+		additionalFields.memo,
+		authorizationList,
+		additionalFields.gasLimit,
+	);
+}
+
 export async function listContractMethods(
 	context: ILoadOptionsFunctions | IExecuteFunctions,
 	chainId?: EChain,
