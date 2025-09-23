@@ -776,3 +776,98 @@ export async function readContractMethod(
 		throw error;
 	}
 }
+
+export async function executeBatch(
+	context: IExecuteFunctions,
+	contractMethods: Array<{
+		contractMethodId: string;
+		executionIndex: number;
+		params: JSONValue;
+		value?: string;
+		contractAddress?: string;
+	}>,
+	walletId: string,
+	atomic?: boolean,
+	memo?: string,
+	authorizationList?: ERC7702Authorization[],
+	gasLimit?: string,
+): Promise<Transaction> {
+	try {
+		const response: Transaction = await context.helpers.requestWithAuthentication.call(
+			context,
+			'oneShotOAuth2Api',
+			{
+				method: 'POST',
+				url: `/methods/executeBatch`,
+				body: {
+					contractMethods,
+					walletId,
+					atomic,
+					memo,
+					authorizationList,
+					gasLimit,
+				},
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+				},
+				json: true,
+				baseURL: oneshotApiBaseUrl,
+			},
+			additionalCredentialOptions,
+		);
+
+		return response;
+	} catch (error) {
+		context.logger.error(`Error executing Contract Method batch ${error.message}`, { error });
+		throw error;
+	}
+}
+
+export async function executeAsDelegatorBatch(
+	context: IExecuteFunctions,
+	contractMethods: Array<{
+		contractMethodId: string;
+		executionIndex: number;
+		params: JSONValue;
+		delegatorAddress: string;
+		value?: string;
+		contractAddress?: string;
+	}>,
+	walletId: string,
+	atomic?: boolean,
+	memo?: string,
+	authorizationList?: ERC7702Authorization[],
+	gasLimit?: string,
+): Promise<Transaction> {
+	try {
+		const response: Transaction = await context.helpers.requestWithAuthentication.call(
+			context,
+			'oneShotOAuth2Api',
+			{
+				method: 'POST',
+				url: `/methods/executeAsDelegatorBatch`,
+				body: {
+					contractMethods,
+					walletId,
+					atomic,
+					memo,
+					authorizationList,
+					gasLimit,
+				},
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+				},
+				json: true,
+				baseURL: oneshotApiBaseUrl,
+			},
+			additionalCredentialOptions,
+		);
+
+		return response;
+	} catch (error) {
+		context.logger.error(`Error executing Contract Method batch as delegator ${error.message}`, { error });
+		throw error;
+	}
+}
