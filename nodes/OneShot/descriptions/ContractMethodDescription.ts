@@ -301,156 +301,6 @@ const contractMethodFields: INodeProperties[] = [
 		description: 'The address of the delegator wallet to use for the contract method',
 	},
 	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['contractMethods'],
-				operation: ['execute'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Wallet ID',
-				name: 'walletId',
-				type: 'string',
-				default: '',
-				description: 'The ID of the Wallet to use for this Contract Method',
-			},
-			{
-				displayName: 'Memo',
-				name: 'memo',
-				type: 'string',
-				default: '',
-				description:
-					'Optional text to include with the Transaction after the Contract Method is executed',
-			},
-			{
-				displayName: 'Authorization List',
-				name: 'authorizationList',
-				type: 'json',
-				default: '[]',
-				description: 'List of ERC-7702 authorizations for the Contract Method',
-			},
-			{
-				displayName: 'Gas Limit',
-				name: 'gasLimit',
-				type: 'string',
-				default: '',
-				description:
-					'The gas limit to use for the Contract Method. The higher of either this value or the estimated gas will be used.',
-			},
-		],
-	},
-	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['contractMethods'],
-				operation: ['executeAsDelegator'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Wallet ID',
-				name: 'walletId',
-				type: 'string',
-				default: '',
-				description: 'The ID of the Wallet to use for this Contract Method',
-			},
-			{
-				displayName: 'Memo',
-				name: 'memo',
-				type: 'string',
-				default: '',
-				description:
-					'Optional text to include with the Transaction after the Contract Method is executed',
-			},
-			{
-				displayName: 'Gas Limit',
-				name: 'gasLimit',
-				type: 'string',
-				default: '',
-				description:
-					'The gas limit to use for the Contract Method. The higher of either this value or the estimated gas will be used.',
-			},
-		],
-	},
-	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['contractMethods'],
-				operation: ['encode'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Authorization List',
-				name: 'authorizationList',
-				type: 'json',
-				default: '[]',
-				description: 'List of ERC-7702 authorizations for the Contract Method',
-			},
-		],
-	},
-	{
-		displayName: 'Additional Fields',
-		name: 'additionalFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['contractMethods'],
-				operation: ['executeBatch', 'executeAsDelegatorBatch'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Atomic',
-				name: 'atomic',
-				type: 'boolean',
-				default: true,
-				description: 'Whether or not all the transactions in the batch must succeed, or the entire batch is rolled back',
-			},
-			{
-				displayName: 'Memo',
-				name: 'memo',
-				type: 'string',
-				default: '',
-				description:
-					'Optional text to include with the Transaction after the batch is executed',
-			},
-			{
-				displayName: 'Authorization List',
-				name: 'authorizationList',
-				type: 'json',
-				default: '[]',
-				description: 'List of ERC-7702 authorizations for the batch execution',
-			},
-			{
-				displayName: 'Gas Limit',
-				name: 'gasLimit',
-				type: 'string',
-				default: '',
-				description:
-					'The gas limit to use for the batch execution. The higher of either this value or the estimated gas will be used.',
-			},
-		],
-	},
-	{
 		displayName: 'Name',
 		name: 'name',
 		type: 'string',
@@ -619,6 +469,118 @@ const contractMethodFields: INodeProperties[] = [
 		},
 		default: 25,
 		description: 'Enter the size of the page to get',
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['execute', 'executeAsDelegator'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Wallet ID',
+				name: 'walletId',
+				type: 'string',
+				default: '',
+				description: 'The ID of the Wallet to use for this Contract Method',
+			},
+			{
+				displayName: 'Memo',
+				name: 'memo',
+				type: 'string',
+				default: '',
+				description:
+					'Optional text to include with the Transaction after the Contract Method is executed',
+			},
+			{
+				displayName: 'Authorization List',
+				name: 'authorizationList',
+				type: 'json',
+				default: '[]',
+				description: 'List of ERC-7702 authorizations for the Contract Method',
+			},
+			{
+				displayName: 'Gas Limit',
+				name: 'gasLimit',
+				type: 'string',
+				default: '',
+				description:
+					'The gas limit to use for the Contract Method. The higher of either this value or the estimated gas will be used.',
+			},
+		],
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['encode'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Authorization List',
+				name: 'authorizationList',
+				type: 'json',
+				default: '[]',
+				description: 'List of ERC-7702 authorizations for the Contract Method',
+			},
+		],
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['executeBatch', 'executeAsDelegatorBatch'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Atomic',
+				name: 'atomic',
+				type: 'boolean',
+				default: true,
+				description: 'Whether or not all the transactions in the batch must succeed, or the entire batch is rolled back',
+			},
+			{
+				displayName: 'Memo',
+				name: 'memo',
+				type: 'string',
+				default: '',
+				description:
+					'Optional text to include with the Transaction after the batch is executed',
+			},
+			{
+				displayName: 'Authorization List',
+				name: 'authorizationList',
+				type: 'json',
+				default: '[]',
+				description: 'List of ERC-7702 authorizations for the batch execution',
+			},
+			{
+				displayName: 'Gas Limit',
+				name: 'gasLimit',
+				type: 'string',
+				default: '',
+				description:
+					'The gas limit to use for the batch execution. The higher of either this value or the estimated gas will be used.',
+			},
+		],
 	},
 ];
 

@@ -90,7 +90,7 @@ async function loadContractMethodOptions(
 
 	for (const contractMethod of contractMethods.response) {
 		options.push({
-			name: contractMethod.name,
+			name: `${contractMethod.name} (${contractMethod.chainId})`,
 			value: contractMethod.id,
 			description: contractMethod.description || '',
 		});

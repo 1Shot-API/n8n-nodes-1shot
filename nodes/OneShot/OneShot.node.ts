@@ -31,6 +31,8 @@ import {
 	encodeContractMethodOperation,
 	estimateContractMethodOperation,
 	executeAsDelegatorContractMethodOperation,
+	executeBatchOperation,
+	executeAsDelegatorBatchOperation,
 	executeContractMethodOperation,
 	getContractMethodOperation,
 	listContractMethodsOperation,
@@ -173,6 +175,12 @@ export class OneShot implements INodeType {
 				} else if (operation === 'assureContractMethodsFromPrompt') {
 					const response = await assureContractMethodsFromPromptOperation(this, i);
 					returnData.push(...response);
+				} else if (operation === 'executeBatch') {
+					const response = await executeBatchOperation(this, i);
+					returnData.push(response);
+				} else if (operation === 'executeAsDelegatorBatch') {
+					const response = await executeAsDelegatorBatchOperation(this, i);
+					returnData.push(response);
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
