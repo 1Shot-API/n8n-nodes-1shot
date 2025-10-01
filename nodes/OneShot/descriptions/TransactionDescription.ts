@@ -162,7 +162,7 @@ const transactionFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'A unix timestamp to look for transaction after',
+		description: 'A unix timestamp to look for transactions after',
 	},
 	{
 		displayName: 'Before Time',
