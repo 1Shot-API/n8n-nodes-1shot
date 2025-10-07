@@ -225,15 +225,42 @@ const contractEventFields: INodeProperties[] = [
 	{
 		displayName: 'Topics',
 		name: 'topics',
-		type: 'json',
+		type: 'fixedCollection',
+		typeOptions: {
+			multipleValues: true,
+		},
 		displayOptions: {
 			show: {
 				resource: ['contractEvents'],
 				operation: ['search'],
 			},
 		},
-		default: '{}',
-		description: 'Filter by indexed event parameters. Enter a JSON object (e.g., {"from": "0x1234567890123456789012345678901234567890", "to": "0x0987654321098765432109876543210987654321"}).',
+		default: {},
+		description: 'Filter by indexed event parameters. Add topic name-value pairs to filter the search results.',
+		options: [
+			{
+				name: 'topic',
+				displayName: 'Topic',
+				values: [
+					{
+						displayName: 'Topic Name',
+						name: 'name',
+						type: 'string',
+						required: true,
+						default: '',
+						description: 'The name of the indexed topic parameter (e.g., "from", "to", "tokenId")',
+					},
+					{
+						displayName: 'Topic Value',
+						name: 'value',
+						type: 'string',
+						required: true,
+						default: '',
+						description: 'The value to filter by (e.g., "0x1234567890123456789012345678901234567890")',
+					},
+				],
+			},
+		],
 	},
 	{
 		displayName: 'Page Number',

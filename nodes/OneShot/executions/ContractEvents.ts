@@ -66,7 +66,18 @@ export async function searchContractEventOperation(context: IExecuteFunctions, i
 	const contractEventId = context.getNodeParameter('contractEventId', index) as string;
 	const startBlock = context.getNodeParameter('startBlock', index) as number;
 	const endBlock = context.getNodeParameter('endBlock', index) as number;
-	const topics = context.getNodeParameter('topics', index) as any;
+	const topicsData = context.getNodeParameter('topics', index) as any;
+
+	// Transform the fixedCollection topics data into the API format
+	let topics: { [key: string]: string } = {};
+	if (topicsData && topicsData.topic) {
+		topics = {};
+		for (const topic of topicsData.topic) {
+			if (topic.name && topic.value) {
+				topics[topic.name] = topic.value;
+			}
+		}
+	}
 
 	return await searchContractEvent(context, contractEventId, startBlock, endBlock, topics);
 }
