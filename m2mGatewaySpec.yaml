@@ -952,6 +952,299 @@ paths:
         500:
           $ref: "#/components/responses/DatabaseError"
 
+  /business/{businessId}/events:
+    post:
+      tags:
+        - Contract Events
+        - Create
+      description: Creates a new contract event definition for monitoring blockchain events.
+      parameters:
+        - name: businessId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/BusinessId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - chainId
+                - contractAddress
+                - name
+                - description
+                - eventName
+              properties:
+                chainId:
+                  $ref: "#/components/schemas/EChain"
+                contractAddress:
+                  $ref: "#/components/schemas/ContractAddress"
+                name:
+                  type: string
+                  description: A human-readable name for this event definition
+                  example: "Transfer Event"
+                description:
+                  type: string
+                  description: A description of what this event represents
+                  example: "Monitors token transfer events"
+                eventName:
+                  type: string
+                  description: The exact name of the event as defined in the contract ABI
+                  example: "Transfer"
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns the created contract event definition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractEvent"
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+    get:
+      tags:
+        - Contract Events
+        - List
+      description: Lists contract event definitions for a business with optional filtering.
+      parameters:
+        - name: businessId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/BusinessId"
+        - name: page
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Page"
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/PageSize"
+        - name: chainId
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/EChain"
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Filter by event definition name
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, deleted, all]
+            default: active
+            description: Filter by deletion status
+        - name: contractAddress
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContractAddress"
+        - name: eventName
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Filter by contract event name
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns a paginated list of contract event definitions.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/PagedResponse"
+                  - type: object
+                    properties:
+                      response:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ContractEvent"
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+  /events/{contractEventId}:
+    get:
+      tags:
+        - Contract Events
+        - Get
+      description: Retrieves a specific contract event definition by ID.
+      parameters:
+        - name: contractEventId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/ContractEventId"
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns the contract event definition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractEvent"
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+    put:
+      tags:
+        - Contract Events
+        - Update
+      description: Updates an existing contract event definition.
+      parameters:
+        - name: contractEventId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/ContractEventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Updated name for the event definition
+                description:
+                  type: string
+                  description: Updated description for the event definition
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns the updated contract event definition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractEvent"
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+    delete:
+      tags:
+        - Contract Events
+        - Delete
+      description: Deletes a contract event definition.
+      parameters:
+        - name: contractEventId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/ContractEventId"
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Successfully deleted the contract event definition.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+  /events/{contractEventId}/search:
+    post:
+      tags:
+        - Contract Events
+        - Search
+      description: Reads contract event logs from the blockchain for the specified event definition.
+      parameters:
+        - name: contractEventId
+          required: true
+          in: path
+          schema:
+            $ref: "#/components/schemas/ContractEventId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startBlock:
+                  type: integer
+                  description: Starting block number to search from
+                  example: 12345678
+                endBlock:
+                  type: integer
+                  description: Ending block number to search to
+                  example: 12345680
+                topics:
+                  type: object
+                  description: Filter by indexed event parameters
+                  additionalProperties:
+                    type: string
+                    description: Topic value to filter by. Must be an indexed topic.
+                  example:
+                    from: "0x1234567890123456789012345678901234567890"
+                    to: "0x0987654321098765432109876543210987654321"
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns the contract event logs found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ContractEventLog"
+                  error:
+                    type: string
+                    description: The error message from the API
+                  maxResults:
+                    type: integer
+                    description: The maximum number of results returned by the API
+                  startBlock:
+                    type: integer
+                    description: The recommended starting block number in case of excessive results.
+                  endBlock:
+                    type: integer
+                    description: The recommended ending block number in case of excessive results.
+        403:
+          $ref: "#/components/responses/PermissionError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
   /business/{businessId}/transactions:
     get:
       tags:
@@ -1672,6 +1965,215 @@ paths:
         500:
           $ref: "#/components/responses/DatabaseError"
 
+  /x402/supported:
+    get:
+      tags:
+        - x402
+      description: Returns the supported payment methods
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns whether or not the payment should succeed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kinds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        scheme:
+                          type: string
+                          description: The scheme for the payment
+                        network:
+                          $ref: "#/components/schemas/EX402Network"
+                      required:
+                        - scheme
+                        - network
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+  /x402/verify:
+    post:
+      tags:
+        - x402
+      description: Verifies an x402 payment header
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                x402Version:
+                  type: integer
+                  description: The x402 protocol version. Right now, it's just 1.
+                  example: 1
+                paymentPayload:
+                  type: string
+                  description: A JSON stringified PaymentPayload object
+                paymentRequirements:
+                  type: object
+                  properties:
+                    scheme:
+                      type: string
+                      example: exact
+                    network:
+                      $ref: "#/components/schemas/EX402Network"
+                    maxAmountRequired:
+                      type: string
+                      format: big-number-string
+                      example: 5000000
+                    resource:
+                      type: string
+                      example: https://n8n.1shotapi.dev/webhook/gas-station
+                    description:
+                      type: string
+                      example: Swap stablecoins for gas tokens
+                    mimeType:
+                      type: string
+                      example: ""
+                    outputSchema:
+                      type: object
+                    payTo:
+                      type: string
+                      format: evm-address
+                      example: 0x9fEad8B19C044C2f404dac38B925Ea16ADaa2954
+                    maxTimeoutSeconds:
+                      type: integer
+                      example: 150
+                    asset:
+                      type: string
+                      format: evm-address
+                      example: 0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9
+                    extra:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: Paypal USD
+                        version:
+                          type: string
+                          example: 1
+              required:
+                - x402Version
+                - paymentPayload
+                - paymentRequirements
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns whether or not the payment should succeed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                    description: Whether or not the payment is valid
+                  invalidReason:
+                    type: string
+                    description: The reason, if any, that the payment is invalid. Will be empty if isValid is true.
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+  /x402/settle:
+    post:
+      tags:
+        - x402
+      description: Runs a transaction from an x402 header and returns whether or not the payment was successful.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                x402Version:
+                  type: integer
+                  description: The x402 protocol version. Right now, it's just 1.
+                  example: 1
+                paymentPayload:
+                  type: string
+                  description: A JSON stringified PaymentPayload object
+                paymentRequirements:
+                  type: object
+                  properties:
+                    scheme:
+                      type: string
+                      example: exact
+                    network:
+                      $ref: "#/components/schemas/EX402Network"
+                    maxAmountRequired:
+                      type: string
+                      format: big-number-string
+                      example: 5000000
+                    resource:
+                      type: string
+                      example: https://n8n.1shotapi.dev/webhook/gas-station
+                    description:
+                      type: string
+                      example: Swap stablecoins for gas tokens
+                    mimeType:
+                      type: string
+                      example: ""
+                    outputSchema:
+                      type: object
+                    payTo:
+                      type: string
+                      format: evm-address
+                      example: 0x9fEad8B19C044C2f404dac38B925Ea16ADaa2954
+                    maxTimeoutSeconds:
+                      type: integer
+                      example: 150
+                    asset:
+                      type: string
+                      format: evm-address
+                      example: 0xcac524bca292aaade2df8a05cc58f0a65b1b3bb9
+                    extra:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: Paypal USD
+                        version:
+                          type: string
+                          example: 1
+              required:
+                - x402Version
+                - paymentPayload
+                - paymentRequirements
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Returns whether or not the payment should succeed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+                  txHash:
+                    type: string
+                  networkId:
+                    $ref: "#/components/schemas/EX402Network"
+                required:
+                  - success
+                  - networkId
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
 components:
   securitySchemes:
     OAuth2ClientCredentials:
@@ -1746,6 +2248,13 @@ components:
           required:
             - deleted
         - $ref: "#/components/schemas/EntityBookKeepingWithoutDeleted"
+
+    EX402Network:
+      type: string
+      description: The x402 network name
+      enum:
+        - mainnet
+        - sepolia
 
     ETransactionStatus:
       type: string
@@ -2734,3 +3243,118 @@ components:
         - signature
         - topic
         - args
+
+    ContractEventId:
+      type: string
+      format: uuid
+      description: The unique identifier for a contract event definition
+      example: "8a6e0804-2bd0-4672-b79d-d97027f90720"
+
+    ContractEvent:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ContractEventId"
+        businessId:
+          $ref: "#/components/schemas/BusinessId"
+        chainId:
+          $ref: "#/components/schemas/EChain"
+        contractAddress:
+          $ref: "#/components/schemas/ContractAddress"
+        name:
+          type: string
+          description: Human-readable name for the event definition
+          example: "Transfer Event"
+        description:
+          type: string
+          description: Description of what this event represents
+          example: "Monitors token transfer events"
+        eventName:
+          type: string
+          description: The exact name of the event as defined in the contract ABI
+          example: "Transfer"
+        topicHash:
+          type: string
+          description: The keccak256 hash of the event signature
+          example: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        topics:
+          type: array
+          description: Array of event parameter definitions
+          items:
+            $ref: "#/components/schemas/Topic"
+        updated:
+          type: integer
+          format: int64
+          description: Unix timestamp when the event definition was last updated
+        created:
+          type: integer
+          format: int64
+          description: Unix timestamp when the event definition was created
+      required:
+        - id
+        - businessId
+        - chainId
+        - contractAddress
+        - name
+        - description
+        - eventName
+        - topicHash
+        - topics
+        - updated
+        - created
+
+    Topic:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the event parameter
+          example: "from"
+        indexed:
+          type: boolean
+          description: Whether this parameter is indexed in the event
+          example: true
+      required:
+        - name
+        - indexed
+
+    ContractEventLog:
+      type: object
+      properties:
+        eventName:
+          type: string
+          description: Name of the event that was emitted
+          example: "Transfer"
+        blockNumber:
+          type: integer
+          description: Block number where the event was emitted
+          example: 12345678
+        transactionHash:
+          type: string
+          description: Hash of the transaction that emitted the event
+          example: "0x1234567890abcdef..."
+        logIndex:
+          type: integer
+          description: Index of the log within the transaction
+          example: 0
+        removed:
+          type: boolean
+          description: Whether this log was removed due to chain reorganization
+          example: false
+        topics:
+          type: object
+          description: Decoded event arguments by parameter name
+          additionalProperties:
+            type: string
+            description: Decoded value for the event parameter
+          example:
+            from: "0x1234567890123456789012345678901234567890"
+            to: "0x0987654321098765432109876543210987654321"
+            value: "1000000000000000000"
+      required:
+        - eventName
+        - blockNumber
+        - transactionHash
+        - logIndex
+        - removed
+        - topics

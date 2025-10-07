@@ -8,6 +8,7 @@ import {
 	IDataObject,
 } from 'n8n-workflow';
 import { contractMethodOperationsFields } from './descriptions/ContractMethodDescription';
+import { contractEventOperationsFields } from './descriptions/ContractEventDescription';
 import { walletOperationsFields } from './descriptions/WalletDescription';
 import { promptOperationsFields } from './descriptions/PromptDescription';
 import { transactionOperationsFields } from './descriptions/TransactionDescription';
@@ -39,6 +40,14 @@ import {
 	readContractMethodOperation,
 	simulateContractMethodOperation,
 } from './executions/ContractMethods';
+import {
+	createContractEventOperation,
+	deleteContractEventOperation,
+	getContractEventOperation,
+	listContractEventsOperation,
+	searchContractEventOperation,
+	updateContractEventOperation,
+} from './executions/ContractEvents';
 import { oneshotApiBaseUrl } from './types/constants';
 import { getTransactionOperation, listTransactionsOperation } from './executions/Transactions';
 import { searchPromptsOperation } from './executions/Prompts';
@@ -97,6 +106,10 @@ export class OneShot implements INodeType {
 						value: 'chains',
 					},
 					{
+						name: 'Contract Event',
+						value: 'contractEvents',
+					},
+					{
 						name: 'Contract Method',
 						value: 'contractMethods',
 					},
@@ -120,6 +133,7 @@ export class OneShot implements INodeType {
 				default: 'contractMethods',
 			} as INodeProperties,
 			...chainOperationsFields,
+			...contractEventOperationsFields,
 			...contractMethodOperationsFields,
 			...walletOperationsFields,
 			...promptOperationsFields,
@@ -185,6 +199,31 @@ export class OneShot implements INodeType {
 					throw new NodeOperationError(
 						this.getNode(),
 						`Unsupported operation for resource contractMethods: ${operation}`,
+					);
+				}
+			} else if (resource === 'contractEvents') {
+				if (operation === 'list') {
+					const response = await listContractEventsOperation(this, i);
+					returnData.push(...response.response);
+				} else if (operation === 'create') {
+					const response = await createContractEventOperation(this, i);
+					returnData.push(response);
+				} else if (operation === 'get') {
+					const response = await getContractEventOperation(this, i);
+					returnData.push(response);
+				} else if (operation === 'update') {
+					const response = await updateContractEventOperation(this, i);
+					returnData.push(response);
+				} else if (operation === 'delete') {
+					const response = await deleteContractEventOperation(this, i);
+					returnData.push(response);
+				} else if (operation === 'search') {
+					const response = await searchContractEventOperation(this, i);
+					returnData.push(response);
+				} else {
+					throw new NodeOperationError(
+						this.getNode(),
+						`Unsupported operation for resource contractEvents: ${operation}`,
 					);
 				}
 			} else if (resource === 'wallets') {
