@@ -1,5 +1,6 @@
 import { ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow';
 import { listContractMethods } from './ContractMethods';
+import { listContractEvents } from './ContractEvents';
 import { listChains } from './Chains';
 
 export async function loadChainOptions(
@@ -93,6 +94,33 @@ async function loadContractMethodOptions(
 			name: `${contractMethod.name} (${contractMethod.chainId})`,
 			value: contractMethod.id,
 			description: contractMethod.description || '',
+		});
+	}
+
+	return options;
+}
+
+export async function loadContractEventOptions(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	const options: INodePropertyOptions[] = [];
+
+	const contractEvents = await listContractEvents(
+		this,
+		undefined, // chainId
+		1, // page
+		1000, // pageSize
+		undefined, // name
+		undefined, // status
+		undefined, // contractAddress
+		undefined, // eventName
+	);
+
+	for (const contractEvent of contractEvents.response) {
+		options.push({
+			name: `${contractEvent.name} (${contractEvent.chainId})`,
+			value: contractEvent.id,
+			description: contractEvent.description || '',
 		});
 	}
 

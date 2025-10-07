@@ -18,6 +18,7 @@ import {
 	loadContractMethodAllOptions,
 	loadContractMethodExecutionOptions,
 	loadContractMethodReadOptions,
+	loadContractEventOptions,
 } from './executions/options';
 import {
 	createWalletOperation,
@@ -149,6 +150,7 @@ export class OneShot implements INodeType {
 			loadContractMethodExecutionOptions,
 			loadContractMethodReadOptions,
 			loadContractMethodAllOptions,
+			loadContractEventOptions,
 			loadWalletOptions,
 		},
 	};

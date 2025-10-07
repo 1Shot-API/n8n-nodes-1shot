@@ -56,9 +56,13 @@ export const contractEventOperations: INodeProperties[] = [
 
 const contractEventFields: INodeProperties[] = [
 	{
-		displayName: 'Contract Event ID',
+		displayName: 'Contract Event Name or ID',
 		name: 'contractEventId',
-		type: 'string',
+		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'loadContractEventOptions',
+		},
+		required: true,
 		displayOptions: {
 			show: {
 				resource: ['contractEvents'],
@@ -66,7 +70,8 @@ const contractEventFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'Enter the ID of the Contract Event you want to get',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 	{
 		displayName: 'Name',
