@@ -251,3 +251,31 @@ export interface NewSolidityStruct {
 export interface EncodeContractMethodResult {
 	data: string;
 }
+
+export interface Topic {
+	name: string;
+	indexed: boolean;
+}
+
+export interface ContractEvent {
+	id: string;
+	businessId: string;
+	chainId: EChain;
+	contractAddress: string;
+	name: string;
+	description: string;
+	eventName: string;
+	topicHash: string;
+	topics: Topic[];
+	updated: number;
+	created: number;
+}
+
+export interface ContractEventLog {
+	eventName: string;
+	blockNumber: number;
+	transactionHash: string;
+	logIndex: number;
+	removed: boolean;
+	topics: { [key: string]: string };
+}
