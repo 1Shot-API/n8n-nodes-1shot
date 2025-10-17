@@ -1991,6 +1991,22 @@ paths:
                           description: The scheme for the payment
                         network:
                           $ref: "#/components/schemas/EX402Network"
+                        tokens:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              contractAddress:
+                                type: string
+                                format: evm-address
+                              name:
+                                type: string
+                              symbol:
+                                type: string
+                              decimals:
+                                type: integer
+                              version:
+                                type: integer
                       required:
                         - scheme
                         - network

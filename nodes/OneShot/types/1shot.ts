@@ -279,3 +279,77 @@ export interface ContractEventLog {
 	removed: boolean;
 	topics: { [key: string]: string };
 }
+
+export type EX402Network = 'mainnet' | 'sepolia';
+
+export interface X402SupportedResponse {
+	kinds: Array<{
+		scheme: string;
+		network: EX402Network;
+		tokens: Array<{
+			contractAddress: string;
+			name: string;
+			symbol: string;
+			decimals: number;
+			version: string;
+		}>;
+	}>;
+}
+
+export interface IPaymentRequirements {
+	scheme: string;
+	network: string;
+	maxAmountRequired: string; // BigNumberString
+	resource: string;
+	description: string;
+	mimeType: string;
+	outputSchema: any;
+	payTo: string; // EVM Account Address
+	maxTimeoutSeconds: number;
+	asset: string; // EVM Contract Address
+	extra: {
+		name: string;
+		version: string;
+	};
+}
+
+export interface IPaymentPayload {
+	x402Version: number;
+	scheme: string;
+	network: string;
+	payload: {
+		authorization: {
+			from: string;
+			to: string;
+			value: string;
+			validAfter: string;
+			validBefore: string;
+			nonce: string;
+		};
+		signature: string;
+	};
+}
+
+export interface X402VerifyRequest {
+	x402Version: number;
+	paymentPayload: IPaymentPayload;
+	paymentRequirements: IPaymentRequirements;
+}
+
+export interface X402VerifyResponse {
+	isValid: boolean;
+	invalidReason: string;
+}
+
+export interface X402SettleRequest {
+	x402Version: number;
+	paymentPayload: IPaymentPayload;
+	paymentRequirements: IPaymentRequirements;
+}
+
+export interface X402SettleResponse {
+	success: boolean;
+	error: string;
+	txHash: string;
+	networkId: EX402Network;
+}

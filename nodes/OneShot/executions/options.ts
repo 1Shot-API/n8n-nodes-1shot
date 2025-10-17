@@ -2,6 +2,7 @@ import { ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow';
 import { listContractMethods } from './ContractMethods';
 import { listContractEvents } from './ContractEvents';
 import { listChains } from './Chains';
+import { getX402Supported } from './x402';
 
 export async function loadChainOptions(
 	this: ILoadOptionsFunctions,
@@ -37,10 +38,10 @@ export async function loadChainOptionsWithAll(
 	);
 
 	options.push({
-		name: "All",
-		value: "all",
-		description: "All chains",
-	})
+		name: 'All',
+		value: 'all',
+		description: 'All chains',
+	});
 
 	for (const chain of chains.response) {
 		options.push({
@@ -122,6 +123,27 @@ export async function loadContractEventOptions(
 			value: contractEvent.id,
 			description: contractEvent.description || '',
 		});
+	}
+
+	return options;
+}
+
+export async function loadX402TokenOptions(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
+	const options: INodePropertyOptions[] = [];
+
+	const supportedPayments = await getX402Supported(this);
+
+	for (const supportedPayment of supportedPayments.kinds) {
+		// Each network and token combination is an option
+		for (const token of supportedPayment.tokens) {
+			options.push({
+				name: `${token.name} (${supportedPayment.network})`,
+				value: `${supportedPayment.network}:${token.contractAddress}`,
+				description: `${token.name} (${token.contractAddress}) on ${supportedPayment.network}`,
+			});
+		}
 	}
 
 	return options;

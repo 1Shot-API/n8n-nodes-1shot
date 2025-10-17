@@ -17,10 +17,10 @@ export async function listTransactionsOperation(context: IExecuteFunctions, inde
 
 	return await listTransactions(
 		context,
-		chainId == "all" ? undefined : Number(chainId) as EChain,
+		chainId == 'all' ? undefined : (Number(chainId) as EChain),
 		page || undefined,
 		pageSize || undefined,
-		status == "none" ? undefined : status as ETransactionStatus,
+		status == 'none' ? undefined : (status as ETransactionStatus),
 		walletId || undefined,
 		contractMethodId || undefined,
 		apiCredentialId || undefined,

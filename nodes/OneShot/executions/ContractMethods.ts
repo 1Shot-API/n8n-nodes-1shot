@@ -24,7 +24,7 @@ export async function listContractMethodsOperation(context: IExecuteFunctions, i
 
 	return await listContractMethods(
 		context,
-		chainId == "all" ? undefined : Number(chainId) as EChain,
+		chainId == 'all' ? undefined : (Number(chainId) as EChain),
 		page || undefined,
 		pageSize || undefined,
 		name || undefined,
@@ -270,18 +270,20 @@ export async function executeBatchOperation(context: IExecuteFunctions, index: n
 	};
 
 	// Transform the contract methods data to match the API format
-	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
-		const parsedParams = JSON.parse(method.params);
-		const optionalFields = method.optionalFields || {};
+	const contractMethods = contractMethodsData.contractMethod.map(
+		(method: any, methodIndex: number) => {
+			const parsedParams = JSON.parse(method.params);
+			const optionalFields = method.optionalFields || {};
 
-		return {
-			contractMethodId: method.contractMethodId,
-			executionIndex: methodIndex,
-			params: parsedParams,
-			contractAddress: optionalFields.contractAddress || undefined,
-			value: optionalFields.value || undefined,
-		};
-	});
+			return {
+				contractMethodId: method.contractMethodId,
+				executionIndex: methodIndex,
+				params: parsedParams,
+				contractAddress: optionalFields.contractAddress || undefined,
+				value: optionalFields.value || undefined,
+			};
+		},
+	);
 
 	// Parse authorization list if provided
 	let authorizationList;
@@ -311,19 +313,21 @@ export async function executeAsDelegatorBatchOperation(context: IExecuteFunction
 	};
 
 	// Transform the contract methods data to match the API format
-	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
-		const parsedParams = JSON.parse(method.params);
-		const optionalFields = method.optionalFields || {};
+	const contractMethods = contractMethodsData.contractMethod.map(
+		(method: any, methodIndex: number) => {
+			const parsedParams = JSON.parse(method.params);
+			const optionalFields = method.optionalFields || {};
 
-		return {
-			contractMethodId: method.contractMethodId,
-			executionIndex: methodIndex,
-			params: parsedParams,
-			delegatorAddress: method.delegatorAddress,
-			contractAddress: optionalFields.contractAddress || undefined,
-			value: optionalFields.value || undefined,
-		};
-	});
+			return {
+				contractMethodId: method.contractMethodId,
+				executionIndex: methodIndex,
+				params: parsedParams,
+				delegatorAddress: method.delegatorAddress,
+				contractAddress: optionalFields.contractAddress || undefined,
+				value: optionalFields.value || undefined,
+			};
+		},
+	);
 
 	// Parse authorization list if provided
 	let authorizationList;
@@ -356,18 +360,20 @@ export async function executeBatchAndWaitOperation(
 	};
 
 	// Transform the contract methods data to match the API format
-	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
-		const parsedParams = JSON.parse(method.params);
-		const optionalFields = method.optionalFields || {};
+	const contractMethods = contractMethodsData.contractMethod.map(
+		(method: any, methodIndex: number) => {
+			const parsedParams = JSON.parse(method.params);
+			const optionalFields = method.optionalFields || {};
 
-		return {
-			contractMethodId: method.contractMethodId,
-			executionIndex: methodIndex,
-			params: parsedParams,
-			contractAddress: optionalFields.contractAddress || undefined,
-			value: optionalFields.value || undefined,
-		};
-	});
+			return {
+				contractMethodId: method.contractMethodId,
+				executionIndex: methodIndex,
+				params: parsedParams,
+				contractAddress: optionalFields.contractAddress || undefined,
+				value: optionalFields.value || undefined,
+			};
+		},
+	);
 
 	// Parse authorization list if provided
 	let authorizationList;
@@ -416,19 +422,21 @@ export async function executeAsDelegatorBatchAndWaitOperation(
 	};
 
 	// Transform the contract methods data to match the API format
-	const contractMethods = contractMethodsData.contractMethod.map((method: any, methodIndex: number) => {
-		const parsedParams = JSON.parse(method.params);
-		const optionalFields = method.optionalFields || {};
+	const contractMethods = contractMethodsData.contractMethod.map(
+		(method: any, methodIndex: number) => {
+			const parsedParams = JSON.parse(method.params);
+			const optionalFields = method.optionalFields || {};
 
-		return {
-			contractMethodId: method.contractMethodId,
-			executionIndex: methodIndex,
-			params: parsedParams,
-			delegatorAddress: method.delegatorAddress,
-			contractAddress: optionalFields.contractAddress || undefined,
-			value: optionalFields.value || undefined,
-		};
-	});
+			return {
+				contractMethodId: method.contractMethodId,
+				executionIndex: methodIndex,
+				params: parsedParams,
+				delegatorAddress: method.delegatorAddress,
+				contractAddress: optionalFields.contractAddress || undefined,
+				value: optionalFields.value || undefined,
+			};
+		},
+	);
 
 	// Parse authorization list if provided
 	let authorizationList;
@@ -1071,7 +1079,9 @@ export async function executeAsDelegatorBatch(
 
 		return response;
 	} catch (error) {
-		context.logger.error(`Error executing Contract Method batch as delegator ${error.message}`, { error });
+		context.logger.error(`Error executing Contract Method batch as delegator ${error.message}`, {
+			error,
+		});
 		throw error;
 	}
 }
