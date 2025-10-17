@@ -146,11 +146,6 @@ export class OneShotWebhook implements INodeType {
 				placeholder: 'webhook',
 				description:
 					"The path to listen to, dynamic values could be specified by using ':', e.g. 'your-path/:dynamic-value'. If dynamic values are set 'webhookId' would be prepended to path.",
-				displayOptions: {
-					show: {
-						webhookType: ['x402'],
-					},
-				},
 			},
 			webhookResponseModeProperty,
 			{
