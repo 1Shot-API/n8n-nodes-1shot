@@ -1,22 +1,31 @@
-import { IWebhookFunctions, IWebhookResponseData } from 'n8n-workflow';
+import { INodeExecutionData, IWebhookFunctions, IWebhookResponseData } from 'n8n-workflow';
 import { verifyAsync } from '../crypto/ED25519';
+import { getX402Supported, settleX402Payment, verifyX402Payment } from './x402';
+import { IPaymentPayload, IPaymentRequirements } from '../types/1shot';
 
 export async function webhookTrigger(this: IWebhookFunctions): Promise<IWebhookResponseData> {
-	const publicKey = this.getNodeParameter('publicKey') as string;
+	const webhookType = this.getNodeParameter('webhookType') as string;
 	const body = this.getBodyData();
+
+	if (webhookType === 'oneshot') {
+		return await handleOneShotWebhook.call(this, body);
+	} else if (webhookType === 'x402') {
+		return await handleX402Webhook.call(this, body);
+	} else {
+		throw new Error(`Unsupported webhook type: ${webhookType}`);
+	}
+}
+
+async function handleOneShotWebhook(
+	this: IWebhookFunctions,
+	body: any,
+): Promise<IWebhookResponseData> {
+	const publicKey = this.getNodeParameter('publicKey') as string;
 	const signature = body.signature as string;
 
 	if (!signature) {
 		throw new Error('No signature provided in webhook payload');
 	}
-
-	// Testing
-	//     const privKey = utils.randomPrivateKey(); // Secure random private key
-	//   const message = Uint8Array.from([0xab, 0xbc, 0xcd, 0xde]);
-	//   const pubKey = await getPublicKeyAsync(privKey); // Sync methods below
-	//   const testSig = await signAsync(message, privKey);
-	//   const testValid = await verifyAsync(testSig, message, pubKey);
-	//   this.logger.info(`CHARLIE: Test valid: ${testValid}`);
 
 	// Remove signature from body before verification
 	const { signature: _, ...payloadWithoutSignature } = body;
@@ -35,6 +44,248 @@ export async function webhookTrigger(this: IWebhookFunctions): Promise<IWebhookR
 			],
 		],
 	};
+}
+
+async function handleX402Webhook(
+	this: IWebhookFunctions,
+	body: any,
+): Promise<IWebhookResponseData> {
+	const headers = this.getHeaderData();
+	const req = this.getRequestObject();
+	const resp = this.getResponseObject();
+	// const requestMethod = this.getRequestObject().method;
+
+	// Get the credential data (always available since it's required at node level)
+	const credentials = await this.getCredentials('oneShotOAuth2Api');
+	if (!credentials) {
+		// This is an example of direct response with Express
+		resp.writeHead(403);
+		resp.end('oneShotOAuth2Api credential not found');
+		return { noWebhookResponse: true };
+	}
+
+	// We need to get the supported tokens no matter what
+	const supportedTokens = await getX402Supported(this);
+
+	// We need to figure out which of the tokens have been configured for this node
+	const configuredTokens = this.getNodeParameter('tokens') as {
+		paymentToken: { paymentToken: string; payToAddress: string; paymentAmount: number }[];
+	};
+
+	const optionalFields = this.getNodeParameter('optionalFields') as {
+		resourceDescription: string;
+		mimeType: string;
+	};
+	const { resourceDescription, mimeType } = optionalFields;
+
+	const responseData = this.getNodeParameter('responseData') as string;
+
+	const webhookUrl = this.getNodeWebhookUrl('default');
+	if (webhookUrl == null) {
+		resp.writeHead(403);
+		resp.end('webhookUrl not found');
+		return { noWebhookResponse: true };
+	}
+
+	// We are going to loop over the configured tokens- only those are the supported ones.
+	const paymentRequirements = new Array<PaymentRequirements>();
+	const configuredKinds = new Array<string>();
+
+	for (const configuredToken of configuredTokens.paymentToken) {
+		// Find the supported token that matches the configured token
+		// We need to split up the paymentToken string into the network and contract address.
+		const [network, contractAddress] = configuredToken.paymentToken.split(':');
+
+		// If the kind already has a configuration, that's an error- you can only configure one token per network.
+		if (configuredKinds.includes(network)) {
+			resp.writeHead(403);
+			resp.end(
+				`Misconfiguration: Network ${network} has multiple configured tokens. You may only have one payment token per network.`,
+			);
+			return { noWebhookResponse: true };
+		}
+		configuredKinds.push(network);
+
+		// First we find the "kind" that matches the network.
+		const kind = supportedTokens.kinds.find((kind) => kind.network === network);
+		if (kind == null) {
+			throw new Error(`Supported network ${network} not found`);
+		}
+
+		// Now we find the token that matches the contract address.
+		const supportedToken = kind.tokens.find((token) => token.contractAddress === contractAddress);
+		if (supportedToken == null) {
+			throw new Error(`Supported token ${contractAddress} not found`);
+		}
+
+		// Now we create the payment config.
+		paymentRequirements.push(
+			new PaymentRequirements(
+				kind.scheme,
+				kind.network,
+				configuredToken.paymentAmount.toString(),
+				webhookUrl,
+				resourceDescription,
+				mimeType,
+				{},
+				configuredToken.payToAddress,
+				60,
+				supportedToken.contractAddress,
+				{
+					name: supportedToken.name,
+					version: supportedToken.version,
+				},
+			),
+		);
+	}
+
+	// If there's no x-payment header, return a 402 error with payment details
+	const xPaymentHeader = headers['x-payment'];
+	if (!xPaymentHeader == null || typeof xPaymentHeader !== 'string') {
+		resp.writeHead(402, { 'Content-Type': 'application/json' });
+		resp.end(
+			JSON.stringify({
+				error: {
+					errorMessage: 'No x-payment header provided',
+					paymentConfigs: paymentRequirements,
+				},
+			}),
+		);
+		return { noWebhookResponse: true };
+	}
+
+	// try to decode the x-payment header if it exists
+	try {
+		// Decode the x-payment header from base64
+		const decodedXPayment = Buffer.from(xPaymentHeader, 'base64').toString('utf-8');
+
+		// Parse the decoded value into a JSON object
+		const decodedXPaymentJson = JSON.parse(decodedXPayment) as IPaymentPayload;
+
+		const validation = validateXPayment(decodedXPaymentJson);
+		if (validation != 'valid') {
+			resp.writeHead(402, { 'Content-Type': 'application/json' });
+			resp.end(
+				JSON.stringify({
+					error: {
+						errorMessage: 'x-payment header is not valid',
+						paymentConfigs: paymentRequirements,
+					},
+				}),
+			);
+			return { noWebhookResponse: true };
+		}
+
+		const verification = verifyPaymentDetails(decodedXPaymentJson, paymentRequirements);
+		if (!verification.valid) {
+			resp.writeHead(402, { 'Content-Type': 'application/json' });
+			resp.end(
+				JSON.stringify({
+					error: {
+						errorMessage: `x-payment header is not  for reasons: ${verification.errors}`,
+						paymentConfigs: paymentRequirements,
+					},
+				}),
+			);
+			return { noWebhookResponse: true };
+		}
+
+		// 	const splitSig = splitSignature(decodedXPaymentJson.payload.signature);
+
+		// Looks like everything is valid, now we'll verify the payment via 1Shot API.
+		// We need to get the actual payment config- there's only one per network.
+		// Problem with the x402 spec is that they don't send the actual token address.
+		// So we need to find the config that matches the network, there should be only 1,
+		// and we use that.
+
+		const verifyResponse = await verifyX402Payment(
+			this,
+			decodedXPaymentJson.x402Version,
+			decodedXPaymentJson,
+			verification.paymentRequirements!,
+		);
+
+		if (!verifyResponse.isValid) {
+			resp.writeHead(402, { 'Content-Type': 'application/json' });
+			resp.end(
+				JSON.stringify({
+					error: {
+						errorMessage: `x-payment verification failed: ${verifyResponse.invalidReason}`,
+					},
+				}),
+			);
+			return { noWebhookResponse: true };
+		}
+
+		// If the verification is valid, we are going to be a little optimistic about the settlement. Since this can take a while, if the method errors,
+		// (such as from a Cloudflare 502), we'll move on and assume it's successful.
+
+		try {
+			// Payment is verified, now we need to settle it!
+			const settleResponse = await settleX402Payment(
+				this,
+				decodedXPaymentJson.x402Version,
+				decodedXPaymentJson,
+				verification.paymentRequirements!,
+			);
+
+			if (!settleResponse.success) {
+				resp.writeHead(402, { 'Content-Type': 'application/json' });
+				resp.end(
+					JSON.stringify({
+						error: {
+							errorMessage: `x-payment settlement failed: ${settleResponse.error}`,
+						},
+					}),
+				);
+				return { noWebhookResponse: true };
+			}
+
+			// Payment is settled, now we need to return the workflow data
+			const response: INodeExecutionData = {
+				json: {
+					headers: req.headers,
+					params: req.params,
+					query: req.query,
+					body: req.body,
+					txHash: settleResponse.txHash,
+				},
+			};
+			return {
+				webhookResponse: responseData,
+				workflowData: [[response]],
+			};
+		}
+		catch (error) {
+			this.logger.error('Error in x402 webhook settlement, moving on...', error);
+			const response: INodeExecutionData = {
+				json: {
+					headers: req.headers,
+					params: req.params,
+					query: req.query,
+					body: req.body,
+					txHash: "TBD",
+				},
+			};
+			return {
+				webhookResponse: responseData,
+				workflowData: [[response]],
+			};
+		}
+	} catch (error) {
+		console.error('Error in x402 webhook', error);
+		// Return an error object if the token format is invalid
+		resp.writeHead(402, { 'Content-Type': 'application/json' });
+		resp.end(
+			JSON.stringify({
+				error: {
+					errorMessage: `No x-payment header provided: ${error.message}`,
+					paymentConfigs: paymentRequirements,
+				},
+			}),
+		);
+		return { noWebhookResponse: true };
+	}
 }
 
 // ED-25519 signature verification
@@ -85,4 +336,149 @@ function sortObjectKeys(obj: Record<string, any>): Record<string, any> {
 			result[key] = sortObjectKeys(obj[key]);
 			return result;
 		}, {});
+}
+
+// this will make sure our x-payment header contains all necessary components
+function validateXPayment(payment: IPaymentPayload): string {
+	// Define the expected structure and types
+	const requiredShape = {
+		x402Version: 'number',
+		scheme: 'string',
+		network: 'string',
+		payload: {
+			authorization: {
+				from: 'string',
+				to: 'string',
+				value: 'string',
+				validAfter: 'string',
+				validBefore: 'string',
+				nonce: 'string',
+			},
+			signature: 'string',
+		},
+	};
+
+	const missing = checkShape(requiredShape, payment, '');
+
+	if (missing.length > 0) {
+		return missing.join('; ');
+	}
+	return 'valid';
+}
+
+function checkShape(
+	expected: Record<string, any>,
+	actual: Record<string, any>,
+	path: string,
+): string[] {
+	const missing = new Array<string>();
+	for (const key in expected) {
+		const currentPath = path ? path + '.' + key : key;
+
+		if (!(key in actual)) {
+			missing.push('Missing field: ' + currentPath);
+		} else if (typeof expected[key] === 'object') {
+			if (typeof actual[key] !== 'object' || actual[key] === null) {
+				missing.push('Invalid type at ' + currentPath + ': expected object');
+			} else {
+				checkShape(expected[key], actual[key], currentPath);
+			}
+		} else {
+			if (typeof actual[key] !== expected[key]) {
+				missing.push(
+					'Invalid type at ' +
+						currentPath +
+						': expected ' +
+						expected[key] +
+						', got ' +
+						typeof actual[key],
+				);
+			}
+		}
+	}
+	return missing;
+}
+
+// this function will ensure the x-payment header is for one of our supported
+// networks, is for the correct amount, and pays the right address
+function verifyPaymentDetails(
+	header: IPaymentPayload,
+	paymentRequirements: PaymentRequirements[],
+): { valid: boolean; errors: string; paymentRequirements: PaymentRequirements | undefined } {
+	const errors = [];
+
+	// 1. Check that network exists in config
+	const network = header.network;
+	const configEntry = paymentRequirements.find(
+		(pc) => pc.network.toLowerCase() == (network || '').toLowerCase(),
+	);
+
+	if (configEntry == null) {
+		errors.push('Invalid or unsupported network: ' + network);
+	}
+
+	// 2. Check value >= maxAmountRequired
+	if (configEntry) {
+		try {
+			const required = BigInt(configEntry.maxAmountRequired);
+			let actual;
+
+			actual = BigInt(header.payload.authorization.value);
+			if (typeof actual !== 'undefined' && actual < required) {
+				errors.push(`Value too low: got ${actual}, requires at least ${required}`);
+			}
+		} catch (e) {
+			errors.push('Invalid value: must be numeric string');
+		}
+
+		// 3. Check 'to' matches payTo (case-insensitive)
+		const toAddr = header.payload?.authorization?.to;
+		if (toAddr == null) {
+			errors.push("Missing 'to' field in authorization");
+		} else if (toAddr.toLowerCase() != configEntry.payTo.toLowerCase()) {
+			errors.push(`Invalid 'to' address: expected ${configEntry.payTo}, got ${toAddr}`);
+		}
+
+		// 4. Check the validBefore and validAfer timestamps.
+		const now = Math.floor(Date.now() / 1000);
+		try {
+			const validAfter = Number(header.payload.authorization.validAfter);
+			const validBefore = Number(header.payload.authorization.validBefore);
+
+			if (validAfter > now) {
+				errors.push(`Payment has not activated, validAfter is ${validAfter} but the server time is ${now}`);
+			}
+			if (validBefore < now) {
+				errors.push(`Payment has expired, validBefore is ${validBefore} but the server time is ${now}`);
+			}
+		}
+		catch (e) {
+			errors.push(`Invalid validAfter or validBefore timestamps`);
+		}
+	}
+
+	return {
+		valid: errors.length == 0,
+		errors: errors.join('; '),
+		paymentRequirements: configEntry,
+	};
+}
+
+class PaymentRequirements implements IPaymentRequirements {
+	public constructor(
+		public scheme: string,
+		public network: string,
+		public maxAmountRequired: string,
+		public resource: string,
+		public description: string,
+		public mimeType: string,
+		public outputSchema: any,
+		public payTo: string,
+		public maxTimeoutSeconds: number,
+		public asset: string,
+		public extra: {
+			name: string;
+			version: string;
+		},
+	) {}
 }
