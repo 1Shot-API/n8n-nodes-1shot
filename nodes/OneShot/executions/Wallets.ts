@@ -15,7 +15,7 @@ export async function listWalletsOperation(context: IExecuteFunctions, index: nu
 
 	return await listWallets(
 		context,
-		chainId == "all" ? undefined : Number(chainId) as EChain,
+		chainId == 'all' ? undefined : (Number(chainId) as EChain),
 		page || undefined,
 		pageSize || undefined,
 		name || undefined,

@@ -55,7 +55,8 @@ export const contractMethodOperations: INodeProperties[] = [
 			{
 				name: 'Execute Batch as Delegator',
 				value: 'executeAsDelegatorBatch',
-				description: 'Execute multiple smart contract methods as a delegator in a single transaction',
+				description:
+					'Execute multiple smart contract methods as a delegator in a single transaction',
 				action: 'Execute multiple smart contract methods as delegator',
 			},
 			{
@@ -242,7 +243,8 @@ const contractMethodFields: INodeProperties[] = [
 						type: 'string',
 						required: true,
 						default: '',
-						description: 'The address of the delegator on whose behalf the transaction will be executed',
+						description:
+							'The address of the delegator on whose behalf the transaction will be executed',
 					},
 					{
 						displayName: 'Optional Fields',
@@ -555,15 +557,15 @@ const contractMethodFields: INodeProperties[] = [
 				name: 'atomic',
 				type: 'boolean',
 				default: true,
-				description: 'Whether or not all the transactions in the batch must succeed, or the entire batch is rolled back',
+				description:
+					'Whether or not all the transactions in the batch must succeed, or the entire batch is rolled back',
 			},
 			{
 				displayName: 'Memo',
 				name: 'memo',
 				type: 'string',
 				default: '',
-				description:
-					'Optional text to include with the Transaction after the batch is executed',
+				description: 'Optional text to include with the Transaction after the batch is executed',
 			},
 			{
 				displayName: 'Authorization List',

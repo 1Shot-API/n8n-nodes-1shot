@@ -1,10 +1,5 @@
 import { IExecuteFunctions, ILoadOptionsFunctions, NodeOperationError } from 'n8n-workflow';
-import {
-	EChain,
-	PagedResponse,
-	ContractEvent,
-	ContractEventLog,
-} from '../types/1shot';
+import { EChain, PagedResponse, ContractEvent, ContractEventLog } from '../types/1shot';
 import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constants';
 
 export async function listContractEventsOperation(context: IExecuteFunctions, index: number) {
@@ -17,7 +12,7 @@ export async function listContractEventsOperation(context: IExecuteFunctions, in
 
 	return await listContractEvents(
 		context,
-		chainId == "all" ? undefined : Number(chainId) as EChain,
+		chainId == 'all' ? undefined : (Number(chainId) as EChain),
 		page || undefined,
 		pageSize || undefined,
 		name || undefined,
@@ -39,14 +34,7 @@ export async function createContractEventOperation(context: IExecuteFunctions, i
 	const description = context.getNodeParameter('description', index) as string;
 	const eventName = context.getNodeParameter('eventName', index) as string;
 
-	return await createContractEvent(
-		context,
-		chainId,
-		contractAddress,
-		name,
-		description,
-		eventName,
-	);
+	return await createContractEvent(context, chainId, contractAddress, name, description, eventName);
 }
 
 export async function updateContractEventOperation(context: IExecuteFunctions, index: number) {
@@ -274,7 +262,13 @@ export async function searchContractEvent(
 	startBlock?: number,
 	endBlock?: number,
 	topics?: any,
-): Promise<{ logs: ContractEventLog[]; error?: string; maxResults?: number; startBlock?: number; endBlock?: number }> {
+): Promise<{
+	logs: ContractEventLog[];
+	error?: string;
+	maxResults?: number;
+	startBlock?: number;
+	endBlock?: number;
+}> {
 	try {
 		const response = await context.helpers.requestWithAuthentication.call(
 			context,

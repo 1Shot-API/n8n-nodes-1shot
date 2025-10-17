@@ -1,8 +1,4 @@
-import type {
-	IWebhookFunctions,
-	INodeExecutionData,
-	IDataObject,
-} from 'n8n-workflow';
+import type { IWebhookFunctions, INodeExecutionData, IDataObject } from 'n8n-workflow';
 
 export type WebhookParameters = {
 	httpMethod: string | string[];
@@ -139,34 +135,3 @@ export const isIpWhitelisted = (
 
 	return false;
 };
-
-// export const checkResponseModeConfiguration = (context: IWebhookFunctions) => {
-// 	const responseMode = context.getNodeParameter('responseMode', 'onReceived') as string;
-// 	const connectedNodes = context.getChildNodes(context.getNode().name);
-
-// 	const isRespondToWebhookConnected = connectedNodes.some(
-// 		(node) => node.type === 'n8n-nodes-base.respondToWebhook',
-// 	);
-
-// 	if (!isRespondToWebhookConnected && responseMode === 'responseNode') {
-// 		throw new WorkflowConfigurationError(
-// 			context.getNode(),
-// 			new Error('No Respond to Webhook node found in the workflow'),
-// 			{
-// 				description:
-// 					'Insert a Respond to Webhook node to your workflow to respond to the webhook or choose another option for the “Respond” parameter',
-// 			},
-// 		);
-// 	}
-
-// 	if (isRespondToWebhookConnected && !['responseNode', 'streaming'].includes(responseMode)) {
-// 		throw new WorkflowConfigurationError(
-// 			context.getNode(),
-// 			new Error('Unused Respond to Webhook node found in the workflow'),
-// 			{
-// 				description:
-// 					'Set the “Respond” parameter to “Using Respond to Webhook Node” or remove the Respond to Webhook node',
-// 			},
-// 		);
-// 	}
-// };

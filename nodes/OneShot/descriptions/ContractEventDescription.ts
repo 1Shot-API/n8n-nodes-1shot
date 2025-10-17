@@ -236,7 +236,8 @@ const contractEventFields: INodeProperties[] = [
 			},
 		},
 		default: {},
-		description: 'Filter by indexed event parameters. Add topic name-value pairs to filter the search results.',
+		description:
+			'Filter by indexed event parameters. Add topic name-value pairs to filter the search results.',
 		options: [
 			{
 				name: 'topic',
@@ -256,7 +257,8 @@ const contractEventFields: INodeProperties[] = [
 						type: 'string',
 						required: true,
 						default: '',
-						description: 'The value to filter by (e.g., "0x1234567890123456789012345678901234567890")',
+						description:
+							'The value to filter by (e.g., "0x1234567890123456789012345678901234567890")',
 					},
 				],
 			},

@@ -78,7 +78,7 @@ export const webhookResponseModeProperty: INodeProperties = {
 	displayOptions: {
 		show: {
 			webhookType: ['x402'],
-		}
+		},
 	},
 };
 
@@ -201,47 +201,34 @@ export const webhookOptionsProperty: INodeProperties = {
 			description:
 				'The mime type of the resource. Leave blank for no mime type. For n8n, this is almost always application/JSON',
 		},
-		{
-			displayName: 'Binary File',
-			name: 'binaryData',
-			type: 'boolean',
-			displayOptions: {
-				show: {
-					'/webhookType': ['x402'],
-					'/httpMethod': ['PATCH', 'PUT', 'POST'],
-				},
-			},
-			default: false,
-			description: 'Whether the webhook will receive binary data',
-		},
-		{
-			displayName: 'Put Output File in Field',
-			name: 'binaryPropertyName',
-			type: 'string',
-			default: 'data',
-			displayOptions: {
-				show: {
-					'/webhookType': ['x402'],
-					binaryData: [true],
-				},
-			},
-			hint: 'The name of the output binary field to put the file in',
-			description:
-				'If the data gets received via "Form-Data Multipart" it will be the prefix and a number starting with 0 will be attached to it',
-		},
-		{
-			displayName: 'Field Name for Binary Data',
-			name: 'binaryPropertyName',
-			type: 'string',
-			default: 'data',
-			displayOptions: {
-				show: {
-					'/webhookType': ['x402'],
-				}
-			},
-			description:
-				'The name of the output field to put any binary file data in. Only relevant if binary data is received.',
-		},
+		// {
+		// 	displayName: 'Binary File',
+		// 	name: 'binaryData',
+		// 	type: 'boolean',
+		// 	displayOptions: {
+		// 		show: {
+		// 			'/webhookType': ['x402'],
+		// 			'/httpMethod': ['PATCH', 'PUT', 'POST'],
+		// 		},
+		// 	},
+		// 	default: false,
+		// 	description: 'Whether the webhook will receive binary data',
+		// },
+		// {
+		// 	displayName: 'Put Output File in Field',
+		// 	name: 'binaryPropertyName',
+		// 	type: 'string',
+		// 	default: 'data',
+		// 	displayOptions: {
+		// 		show: {
+		// 			'/webhookType': ['x402'],
+		// 			binaryData: [true],
+		// 		},
+		// 	},
+		// 	hint: 'The name of the output binary field to put the file in',
+		// 	description:
+		// 		'If the data gets received via "Form-Data Multipart" it will be the prefix and a number starting with 0 will be attached to it',
+		// },
 		{
 			displayName: 'Ignore Bots',
 			name: 'ignoreBots',
@@ -272,23 +259,6 @@ export const webhookOptionsProperty: INodeProperties = {
 					'/responseMode': ['onReceived'],
 				},
 			},
-		},
-		{
-			displayName: 'Raw Body',
-			name: 'rawBody',
-			type: 'boolean',
-			displayOptions: {
-				show: {
-					'/webhookType': ['x402'],
-				},
-				hide: {
-					binaryData: [true],
-					noResponseBody: [true],
-				},
-			},
-			default: false,
-			// eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether
-			description: 'Raw body (binary)',
 		},
 		{
 			displayName: 'Raw Body',

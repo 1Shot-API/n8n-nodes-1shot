@@ -6,7 +6,14 @@ import {
 } from 'n8n-workflow';
 import { webhookTrigger } from './executions/Webhooks';
 import { loadX402TokenOptions } from './executions/options';
-import { defaultWebhookDescription, httpMethodsProperty, webhookOptionsProperty, webhookResponseCodeSelector, webhookResponseDataProperty, webhookResponseModeProperty } from './descriptions/WebhookDescription';
+import {
+	defaultWebhookDescription,
+	httpMethodsProperty,
+	webhookOptionsProperty,
+	webhookResponseCodeSelector,
+	webhookResponseDataProperty,
+	webhookResponseModeProperty,
+} from './descriptions/WebhookDescription';
 import { configuredOutputs } from './utils/webhookUtils';
 
 export class OneShotWebhook implements INodeType {
@@ -22,9 +29,7 @@ export class OneShotWebhook implements INodeType {
 		},
 		inputs: [],
 		outputs: `={{(${configuredOutputs})($parameter)}}`,
-		webhooks: [
-			defaultWebhookDescription,
-		],
+		webhooks: [defaultWebhookDescription],
 		credentials: [
 			{
 				name: 'oneShotOAuth2Api',

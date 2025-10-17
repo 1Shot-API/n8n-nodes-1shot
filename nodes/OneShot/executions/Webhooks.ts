@@ -1,7 +1,15 @@
-import { INodeExecutionData, IWebhookFunctions, IWebhookResponseData } from 'n8n-workflow';
+import {
+	IDataObject,
+	INodeExecutionData,
+	IWebhookFunctions,
+	IWebhookResponseData,
+} from 'n8n-workflow';
 import { verifyAsync } from '../crypto/ED25519';
 import { getX402Supported, settleX402Payment, verifyX402Payment } from './x402';
 import { IPaymentPayload, IPaymentRequirements } from '../types/1shot';
+import { isIpWhitelisted, setupOutputConnection } from '../utils/webhookUtils';
+// import { rm, } from 'fs/promises';
+import type * as express from 'express';
 
 export async function webhookTrigger(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 	const webhookType = this.getNodeParameter('webhookType') as string;
@@ -18,7 +26,7 @@ export async function webhookTrigger(this: IWebhookFunctions): Promise<IWebhookR
 
 async function handleOneShotWebhook(
 	this: IWebhookFunctions,
-	body: any,
+	body: IDataObject,
 ): Promise<IWebhookResponseData> {
 	const publicKey = this.getNodeParameter('publicKey') as string;
 	const signature = body.signature as string;
@@ -48,12 +56,69 @@ async function handleOneShotWebhook(
 
 async function handleX402Webhook(
 	this: IWebhookFunctions,
-	body: any,
+	_body: IDataObject,
 ): Promise<IWebhookResponseData> {
+	const responseMode = this.getNodeParameter('responseMode', 'onReceived') as string;
+
+	const options = this.getNodeParameter('options', {}) as {
+		binaryData: boolean;
+		ignoreBots: boolean;
+		rawBody: boolean;
+		responseData?: string;
+		ipWhitelist?: string;
+		resourceDescription: string;
+		mimeType: string;
+	};
+
 	const headers = this.getHeaderData();
 	const req = this.getRequestObject();
 	const resp = this.getResponseObject();
-	// const requestMethod = this.getRequestObject().method;
+	const requestMethod = this.getRequestObject().method;
+
+	if (!isIpWhitelisted(options.ipWhitelist, req.ips, req.ip)) {
+		resp.writeHead(403);
+		resp.end('IP is not whitelisted to access the webhook!');
+		return { noWebhookResponse: true };
+	}
+
+	// All of this is left here and commented out because it relies on 3rd party and/or node.js libraries that I am not sure I am allowed to use.
+	// Once I get an answer from the n8n team, I will either uncomment this or remove it entirely.
+
+	// let validationData: IDataObject | undefined;
+	// try {
+	// 	if (options.ignoreBots && isbot(req.headers['user-agent']))
+	// 		throw new WebhookAuthorizationError(403);
+	// 	validationData = await this.validateAuth(context);
+	// } catch (error) {
+	// 	if (error instanceof WebhookAuthorizationError) {
+	// 		resp.writeHead(error.responseCode, { 'WWW-Authenticate': 'Basic realm="Webhook"' });
+	// 		resp.end(error.message);
+	// 		return { noWebhookResponse: true };
+	// 	}
+	// 	throw error;
+	// }
+
+	const prepareOutput = setupOutputConnection(this, requestMethod, {
+		// jwtPayload: validationData,
+	});
+
+	// if (options.binaryData) {
+	// 	return await handleBinaryData(this, prepareOutput);
+	// }
+
+	// if (req.contentType === 'multipart/form-data') {
+	// 	return await handleFormData(this, prepareOutput);
+	// }
+
+	// if (!req.body && !options.rawBody) {
+	// 	try {
+	// 		return await handleBinaryData(this, prepareOutput);
+	// 	} catch (error) {}
+	// }
+
+	if (options.rawBody && !req.rawBody) {
+		await req.readRawBody();
+	}
 
 	// Get the credential data (always available since it's required at node level)
 	const credentials = await this.getCredentials('oneShotOAuth2Api');
@@ -70,16 +135,6 @@ async function handleX402Webhook(
 	// We need to figure out which of the tokens have been configured for this node
 	const configuredTokens = this.getNodeParameter('tokens') as {
 		paymentToken: { paymentToken: string; payToAddress: string; paymentAmount: number }[];
-	};
-
-	const options = this.getNodeParameter('options', {}) as {
-		binaryData: boolean;
-		ignoreBots: boolean;
-		rawBody: boolean;
-		responseData?: string;
-		ipWhitelist?: string;
-		resourceDescription: string;
-		mimeType: string;
 	};
 
 	const { resourceDescription, mimeType } = options;
@@ -148,16 +203,7 @@ async function handleX402Webhook(
 	// If there's no x-payment header, return a 402 error with payment details
 	const xPaymentHeader = headers['x-payment'];
 	if (!xPaymentHeader == null || typeof xPaymentHeader !== 'string') {
-		resp.writeHead(402, { 'Content-Type': 'application/json' });
-		resp.end(
-			JSON.stringify({
-				error: {
-					errorMessage: 'No x-payment header provided',
-					paymentConfigs: paymentRequirements,
-				},
-			}),
-		);
-		return { noWebhookResponse: true };
+		return generateX402Error(resp, 'No x-payment header provided', paymentRequirements);
 	}
 
 	// try to decode the x-payment header if it exists
@@ -184,19 +230,12 @@ async function handleX402Webhook(
 
 		const verification = verifyPaymentDetails(decodedXPaymentJson, paymentRequirements);
 		if (!verification.valid) {
-			resp.writeHead(402, { 'Content-Type': 'application/json' });
-			resp.end(
-				JSON.stringify({
-					error: {
-						errorMessage: `x-payment header is not  for reasons: ${verification.errors}`,
-						paymentConfigs: paymentRequirements,
-					},
-				}),
+			return generateX402Error(
+				resp,
+				`x-payment header is not valid for reasons: ${verification.errors}`,
+				paymentRequirements,
 			);
-			return { noWebhookResponse: true };
 		}
-
-		// 	const splitSig = splitSignature(decodedXPaymentJson.payload.signature);
 
 		// Looks like everything is valid, now we'll verify the payment via 1Shot API.
 		// We need to get the actual payment config- there's only one per network.
@@ -212,15 +251,11 @@ async function handleX402Webhook(
 		);
 
 		if (!verifyResponse.isValid) {
-			resp.writeHead(402, { 'Content-Type': 'application/json' });
-			resp.end(
-				JSON.stringify({
-					error: {
-						errorMessage: `x-payment verification failed: ${verifyResponse.invalidReason}`,
-					},
-				}),
+			return generateX402Error(
+				resp,
+				`x-payment verification failed: ${verifyResponse.invalidReason}`,
+				paymentRequirements,
 			);
-			return { noWebhookResponse: true };
 		}
 
 		// If the verification is valid, we are going to be a little optimistic about the settlement. Since this can take a while, if the method errors,
@@ -248,50 +283,87 @@ async function handleX402Webhook(
 			}
 
 			// Payment is settled, now we need to return the workflow data
-			const response: INodeExecutionData = {
-				json: {
-					headers: req.headers,
-					params: req.params,
-					query: req.query,
-					body: req.body,
-					txHash: settleResponse.txHash,
-				},
-			};
-			return {
-				webhookResponse: responseData,
-				workflowData: [[response]],
-			};
-		}
-		catch (error) {
+			return generateResponse(
+				this,
+				req,
+				responseMode,
+				responseData,
+				settleResponse.txHash,
+				prepareOutput,
+			);
+		} catch (error) {
 			this.logger.error('Error in x402 webhook settlement, moving on...', error);
-			const response: INodeExecutionData = {
-				json: {
-					headers: req.headers,
-					params: req.params,
-					query: req.query,
-					body: req.body,
-					txHash: "TBD",
-				},
-			};
-			return {
-				webhookResponse: responseData,
-				workflowData: [[response]],
-			};
+			return generateResponse(this, req, responseMode, responseData, 'TBD', prepareOutput);
 		}
 	} catch (error) {
 		console.error('Error in x402 webhook', error);
 		// Return an error object if the token format is invalid
-		resp.writeHead(402, { 'Content-Type': 'application/json' });
-		resp.end(
-			JSON.stringify({
-				error: {
-					errorMessage: `No x-payment header provided: ${error.message}`,
-					paymentConfigs: paymentRequirements,
-				},
-			}),
+		return generateX402Error(
+			resp,
+			`No x-payment header provided: ${error.message}`,
+			paymentRequirements,
 		);
-		return { noWebhookResponse: true };
 	}
+}
+
+function generateResponse(
+	context: IWebhookFunctions,
+	req: express.Request,
+	responseMode: string,
+	responseData: string,
+	txHash: string,
+	prepareOutput: (data: INodeExecutionData) => INodeExecutionData[][],
+) {
+	const response: INodeExecutionData = {
+		json: {
+			headers: req.headers,
+			params: req.params,
+			query: req.query,
+			body: req.body,
+			txHash: txHash,
+		},
+	};
+	if (responseMode === 'streaming') {
+		const res = context.getResponseObject();
+
+		// Set up streaming response headers
+		res.writeHead(200, {
+			'Content-Type': 'application/json; charset=utf-8',
+			'Transfer-Encoding': 'chunked',
+			'Cache-Control': 'no-cache',
+			Connection: 'keep-alive',
+		});
+
+		// Flush headers immediately
+		res.flushHeaders();
+
+		return {
+			noWebhookResponse: true,
+			workflowData: prepareOutput(response),
+		};
+	}
+
+	return {
+		webhookResponse: responseData,
+		workflowData: prepareOutput(response),
+	};
+}
+
+function generateX402Error(
+	resp: express.Response,
+	errorMessage: string,
+	paymentRequirements: IPaymentRequirements[],
+): IWebhookResponseData {
+	resp.writeHead(402, { 'Content-Type': 'application/json' });
+	resp.end(
+		JSON.stringify({
+			error: {
+				errorMessage,
+				paymentConfigs: paymentRequirements,
+			},
+		}),
+	);
+	return { noWebhookResponse: true };
 }
 
 // ED-25519 signature verification
@@ -452,13 +524,16 @@ function verifyPaymentDetails(
 			const validBefore = Number(header.payload.authorization.validBefore);
 
 			if (validAfter > now) {
-				errors.push(`Payment has not activated, validAfter is ${validAfter} but the server time is ${now}`);
+				errors.push(
+					`Payment has not activated, validAfter is ${validAfter} but the server time is ${now}`,
+				);
 			}
 			if (validBefore < now) {
-				errors.push(`Payment has expired, validBefore is ${validBefore} but the server time is ${now}`);
+				errors.push(
+					`Payment has expired, validBefore is ${validBefore} but the server time is ${now}`,
+				);
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			errors.push(`Invalid validAfter or validBefore timestamps`);
 		}
 	}
@@ -488,3 +563,111 @@ class PaymentRequirements implements IPaymentRequirements {
 		},
 	) {}
 }
+
+// async function validateAuth(context: IWebhookFunctions) {
+// 	return await validateWebhookAuthentication(context, this.authPropertyName);
+// }
+
+// async function handleFormData(
+// 	context: IWebhookFunctions,
+// 	prepareOutput: (data: INodeExecutionData) => INodeExecutionData[][],
+// ) {
+// 	const req = context.getRequestObject() as MultiPartFormData.Request;
+// 	const options = context.getNodeParameter('options', {}) as IDataObject;
+// 	const { data, files } = req.body;
+
+// 	const returnItem: INodeExecutionData = {
+// 		json: {
+// 			headers: req.headers,
+// 			params: req.params,
+// 			query: req.query,
+// 			body: data,
+// 		},
+// 	};
+
+// 	if (files && Object.keys(files).length) {
+// 		returnItem.binary = {};
+// 	}
+
+// 	let count = 0;
+
+// 	for (const key of Object.keys(files)) {
+// 		const processFiles: MultiPartFormData.File[] = [];
+// 		let multiFile = false;
+// 		if (Array.isArray(files[key])) {
+// 			processFiles.push(...files[key]);
+// 			multiFile = true;
+// 		} else {
+// 			processFiles.push(files[key]);
+// 		}
+
+// 		let fileCount = 0;
+// 		for (const file of processFiles) {
+// 			let binaryPropertyName = key;
+// 			if (binaryPropertyName.endsWith('[]')) {
+// 				binaryPropertyName = binaryPropertyName.slice(0, -2);
+// 			}
+// 			if (multiFile) {
+// 				binaryPropertyName += fileCount++;
+// 			}
+// 			if (options.binaryPropertyName) {
+// 				binaryPropertyName = `${options.binaryPropertyName}${count}`;
+// 			}
+
+// 			returnItem.binary![binaryPropertyName] = await context.nodeHelpers.copyBinaryFile(
+// 				file.filepath,
+// 				file.originalFilename ?? file.newFilename,
+// 				file.mimetype,
+// 			);
+
+// 			// Delete original file to prevent tmp directory from growing too large
+// 			await rm(file.filepath, { force: true });
+
+// 			count += 1;
+// 		}
+// 	}
+
+// 	return { workflowData: prepareOutput(returnItem) };
+// }
+
+// async function handleBinaryData(
+// 	context: IWebhookFunctions,
+// 	prepareOutput: (data: INodeExecutionData) => INodeExecutionData[][],
+// ): Promise<IWebhookResponseData> {
+// 	const req = context.getRequestObject();
+// 	const options = context.getNodeParameter('options', {}) as IDataObject;
+
+// 	// TODO: create empty binaryData placeholder, stream into that path, and then finalize the binaryData
+// 	const binaryFile = await tmpFile({ prefix: 'n8n-webhook-' });
+
+// 	try {
+// 		await pipeline(req, createWriteStream(binaryFile.path));
+
+// 		const returnItem: INodeExecutionData = {
+// 			json: {
+// 				headers: req.headers,
+// 				params: req.params,
+// 				query: req.query,
+// 				body: {},
+// 			},
+// 		};
+
+// 		const stats = await stat(binaryFile.path);
+// 		if (stats.size) {
+// 			const binaryPropertyName = (options.binaryPropertyName ?? 'data') as string;
+// 			const fileName = req.contentDisposition?.filename ?? uuid();
+// 			const binaryData = await context.nodeHelpers.copyBinaryFile(
+// 				binaryFile.path,
+// 				fileName,
+// 				req.contentType ?? 'application/octet-stream',
+// 			);
+// 			returnItem.binary = { [binaryPropertyName]: binaryData };
+// 		}
+
+// 		return { workflowData: prepareOutput(returnItem) };
+// 	} catch (error) {
+// 		throw new NodeOperationError(context.getNode(), error as Error);
+// 	} finally {
+// 		await binaryFile.cleanup();
+// 	}
+// }

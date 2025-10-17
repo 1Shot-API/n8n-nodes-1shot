@@ -1,8 +1,4 @@
-import {
-	IExecuteFunctions,
-	ILoadOptionsFunctions,
-	IWebhookFunctions,
-} from 'n8n-workflow';
+import { IExecuteFunctions, ILoadOptionsFunctions, IWebhookFunctions } from 'n8n-workflow';
 import {
 	X402SupportedResponse,
 	X402VerifyRequest,
@@ -14,9 +10,11 @@ import {
 } from '../types/1shot';
 import { additionalCredentialOptions, oneshotApiBaseUrl } from '../types/constants';
 
-
 class X402SupportedCacheEntry {
-	public constructor(public timestamp: number, public response: X402SupportedResponse) {}
+	public constructor(
+		public timestamp: number,
+		public response: X402SupportedResponse,
+	) {}
 }
 
 const x402SupportedCache = new Map<string, X402SupportedCacheEntry>();
@@ -32,7 +30,8 @@ export async function getX402Supported(
 
 		// Check the cache for a response
 		const cachedEntry = x402SupportedCache.get(clientId);
-		if (cachedEntry && cachedEntry.timestamp > Date.now() - 1000 * 60 * 5) { // 5 minutes
+		if (cachedEntry && cachedEntry.timestamp > Date.now() - 1000 * 60 * 5) {
+			// 5 minutes
 			return cachedEntry.response;
 		}
 

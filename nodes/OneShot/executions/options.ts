@@ -38,10 +38,10 @@ export async function loadChainOptionsWithAll(
 	);
 
 	options.push({
-		name: "All",
-		value: "all",
-		description: "All chains",
-	})
+		name: 'All',
+		value: 'all',
+		description: 'All chains',
+	});
 
 	for (const chain of chains.response) {
 		options.push({

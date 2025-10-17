@@ -6,7 +6,11 @@ export async function searchPromptsOperation(context: IExecuteFunctions, index: 
 	const query = context.getNodeParameter('query', index) as string;
 	const chainId = context.getNodeParameter('chainId', index) as string;
 
-	return await searchPrompts(context, query, chainId == "all" ? undefined : Number(chainId) as EChain,);
+	return await searchPrompts(
+		context,
+		query,
+		chainId == 'all' ? undefined : (Number(chainId) as EChain),
+	);
 }
 
 export async function searchPrompts(
