@@ -1,47 +1,6 @@
-import type { INodeProperties, INodeTypeDescription, IWebhookDescription } from 'n8n-workflow';
+import type { INodeProperties, IWebhookDescription } from 'n8n-workflow';
 
 import { getResponseCode, getResponseData } from '../utils/webhookUtils';
-
-
-export const webhookOperations: INodeProperties[] = [
-	{
-		displayName: 'Operation',
-		name: 'operation',
-		type: 'options',
-		noDataExpression: true,
-		displayOptions: {
-			show: {
-				resource: ['webhook'],
-			},
-		},
-		options: [
-			{
-				name: 'Webhook',
-				value: 'webhook',
-				description: 'Receive webhooks from 1Shot',
-				action: 'Receive webhooks',
-			},
-		],
-		default: 'webhook',
-	},
-];
-
-const webhookFields: INodeProperties[] = [
-	{
-		displayName: 'Public Key',
-		name: 'publicKey',
-		type: 'string',
-		required: true,
-		displayOptions: {
-			show: {
-				resource: ['webhook'],
-				operation: ['webhook'],
-			},
-		},
-		default: '',
-		description: 'The ED-25519 public key provided by 1Shot for webhook verification',
-	},
-];
 
 export const defaultWebhookDescription: IWebhookDescription = {
 	name: 'default',
@@ -56,64 +15,6 @@ export const defaultWebhookDescription: IWebhookDescription = {
 	responseHeaders: '={{$parameter["options"]["responseHeaders"]}}',
 	path: '={{$parameter["path"]}}',
 };
-
-export const credentialsProperty = (
-	propertyName = 'authentication',
-): INodeTypeDescription['credentials'] => [
-	{
-		name: 'httpBasicAuth',
-		required: true,
-		displayOptions: {
-			show: {
-				[propertyName]: ['basicAuth'],
-			},
-		},
-	},
-	{
-		name: 'httpHeaderAuth',
-		required: true,
-		displayOptions: {
-			show: {
-				[propertyName]: ['headerAuth'],
-			},
-		},
-	},
-	{
-		name: 'jwtAuth',
-		required: true,
-		displayOptions: {
-			show: {
-				[propertyName]: ['jwtAuth'],
-			},
-		},
-	},
-];
-
-export const authenticationProperty = (propertyName = 'authentication'): INodeProperties => ({
-	displayName: 'Authentication',
-	name: propertyName,
-	type: 'options',
-	options: [
-		{
-			name: 'Basic Auth',
-			value: 'basicAuth',
-		},
-		{
-			name: 'Header Auth',
-			value: 'headerAuth',
-		},
-		{
-			name: 'JWT Auth',
-			value: 'jwtAuth',
-		},
-		{
-			name: 'None',
-			value: 'none',
-		},
-	],
-	default: 'none',
-	description: 'The way to authenticate',
-});
 
 export const httpMethodsProperty: INodeProperties = {
 	displayName: 'HTTP Method',
@@ -149,29 +50,45 @@ export const httpMethodsProperty: INodeProperties = {
 	description: 'The HTTP method to listen to',
 };
 
-export const responseCodeProperty: INodeProperties = {
-	displayName: 'Response Code',
-	name: 'responseCode',
-	type: 'number',
+export const webhookResponseModeOptions = [
+	{
+		name: 'Immediately',
+		value: 'onReceived',
+		description: 'As soon as this node executes',
+	},
+	{
+		name: 'When Last Node Finishes',
+		value: 'lastNode',
+		description: 'Returns data of the last-executed node',
+	},
+	{
+		name: 'Streaming',
+		value: 'streaming',
+		description: 'Returns data in real time from streaming enabled nodes',
+	},
+];
+
+export const webhookResponseModeProperty: INodeProperties = {
+	displayName: 'Respond',
+	name: 'responseMode',
+	type: 'options',
+	options: webhookResponseModeOptions,
+	default: 'lastNode',
+	description: 'When and how to respond to the webhook',
 	displayOptions: {
-		hide: {
-			responseMode: ['responseNode'],
-		},
+		show: {
+			webhookType: ['x402'],
+		}
 	},
-	typeOptions: {
-		minValue: 100,
-		maxValue: 599,
-	},
-	default: 200,
-	description: 'The HTTP Response code to return',
 };
 
-export const responseDataProperty: INodeProperties = {
+export const webhookResponseDataProperty: INodeProperties = {
 	displayName: 'Response Data',
 	name: 'responseData',
 	type: 'options',
 	displayOptions: {
 		show: {
+			webhookType: ['x402'],
 			responseMode: ['lastNode'],
 		},
 	},
@@ -204,7 +121,7 @@ export const responseDataProperty: INodeProperties = {
 		'What data should be returned. If it should return all items as an array or only the first item as object.',
 };
 
-export const responseBinaryPropertyNameProperty: INodeProperties = {
+export const webhookResponseBinaryPropertyNameProperty: INodeProperties = {
 	displayName: 'Property Name',
 	name: 'responseBinaryPropertyName',
 	type: 'string',
@@ -218,156 +135,7 @@ export const responseBinaryPropertyNameProperty: INodeProperties = {
 	description: 'Name of the binary property to return',
 };
 
-export const optionsProperty: INodeProperties = {
-	displayName: 'Options',
-	name: 'options',
-	type: 'collection',
-	placeholder: 'Add option',
-	default: {},
-	// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
-	options: [
-		{
-			displayName: 'Ignore Bots',
-			name: 'ignoreBots',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to ignore requests from bots like link previewers and web crawlers',
-		},
-		{
-			displayName: 'IP(s) Whitelist',
-			name: 'ipWhitelist',
-			type: 'string',
-			placeholder: 'e.g. 127.0.0.1',
-			default: '',
-			description: 'Comma-separated list of allowed IP addresses. Leave empty to allow all IPs.',
-		},
-		{
-			displayName: 'No Response Body',
-			name: 'noResponseBody',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to send any body in the response',
-			displayOptions: {
-				hide: {
-					rawBody: [true],
-				},
-				show: {
-					'/responseMode': ['onReceived'],
-				},
-			},
-		},
-		{
-			displayName: 'Raw Body',
-			name: 'rawBody',
-			type: 'boolean',
-			displayOptions: {
-				show: {
-					'@version': [1],
-				},
-				hide: {
-					binaryData: [true],
-					noResponseBody: [true],
-				},
-			},
-			default: false,
-			// eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether
-			description: 'Raw body (binary)',
-		},
-		{
-			displayName: 'Raw Body',
-			name: 'rawBody',
-			type: 'boolean',
-			displayOptions: {
-				hide: {
-					noResponseBody: [true],
-					'@version': [1],
-				},
-			},
-			default: false,
-			description: 'Whether to return the raw body',
-		},
-		{
-			displayName: 'Response Data',
-			name: 'responseData',
-			type: 'string',
-			displayOptions: {
-				show: {
-					'/responseMode': ['onReceived'],
-				},
-				hide: {
-					noResponseBody: [true],
-				},
-			},
-			default: '',
-			placeholder: 'success',
-			description: 'Custom response data to send',
-		},
-		{
-			displayName: 'Response Content-Type',
-			name: 'responseContentType',
-			type: 'string',
-			displayOptions: {
-				show: {
-					'/responseData': ['firstEntryJson'],
-					'/responseMode': ['lastNode'],
-				},
-			},
-			default: '',
-			placeholder: 'application/xml',
-			// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-json
-			description:
-				'Set a custom content-type to return if another one as the "application/json" should be returned',
-		},
-		{
-			displayName: 'Response Headers',
-			name: 'responseHeaders',
-			placeholder: 'Add Response Header',
-			description: 'Add headers to the webhook response',
-			type: 'fixedCollection',
-			typeOptions: {
-				multipleValues: true,
-			},
-			default: {},
-			options: [
-				{
-					name: 'entries',
-					displayName: 'Entries',
-					values: [
-						{
-							displayName: 'Name',
-							name: 'name',
-							type: 'string',
-							default: '',
-							description: 'Name of the header',
-						},
-						{
-							displayName: 'Value',
-							name: 'value',
-							type: 'string',
-							default: '',
-							description: 'Value of the header',
-						},
-					],
-				},
-			],
-		},
-		{
-			displayName: 'Property Name',
-			name: 'responsePropertyName',
-			type: 'string',
-			displayOptions: {
-				show: {
-					'/responseData': ['firstEntryJson'],
-					'/responseMode': ['lastNode'],
-				},
-			},
-			default: 'data',
-			description: 'Name of the property to return the data of instead of the whole JSON',
-		},
-	],
-};
-
-export const responseCodeSelector: INodeProperties = {
+export const webhookResponseCodeSelector: INodeProperties = {
 	displayName: 'Response Code',
 	name: 'responseCode',
 	type: 'options',
@@ -398,50 +166,230 @@ export const responseCodeSelector: INodeProperties = {
 	],
 	default: 200,
 	description: 'The HTTP response code to return',
-};
-
-export const responseCodeOption: INodeProperties = {
-	displayName: 'Response Code',
-	name: 'responseCode',
-	placeholder: 'Add Response Code',
-	type: 'fixedCollection',
-	default: {
-		values: {
-			responseCode: 200,
+	displayOptions: {
+		show: {
+			webhookType: ['x402'],
 		},
 	},
+};
+
+export const webhookOptionsProperty: INodeProperties = {
+	displayName: 'Options',
+	name: 'options',
+	type: 'collection',
+	placeholder: 'Add option',
+	default: {},
+	displayOptions: {
+		show: {
+			webhookType: ['x402'],
+		},
+	},
+	// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
 	options: [
 		{
-			name: 'values',
-			displayName: 'Values',
-			values: [
-				responseCodeSelector,
+			displayName: 'Resource Description',
+			name: 'resourceDescription',
+			type: 'string',
+			default: '',
+			description: 'A description of this x402-gated resource',
+		},
+		{
+			displayName: 'Mime Type',
+			name: 'mimeType',
+			type: 'string',
+			default: 'application/json',
+			description:
+				'The mime type of the resource. Leave blank for no mime type. For n8n, this is almost always application/JSON',
+		},
+		{
+			displayName: 'Binary File',
+			name: 'binaryData',
+			type: 'boolean',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+					'/httpMethod': ['PATCH', 'PUT', 'POST'],
+				},
+			},
+			default: false,
+			description: 'Whether the webhook will receive binary data',
+		},
+		{
+			displayName: 'Put Output File in Field',
+			name: 'binaryPropertyName',
+			type: 'string',
+			default: 'data',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+					binaryData: [true],
+				},
+			},
+			hint: 'The name of the output binary field to put the file in',
+			description:
+				'If the data gets received via "Form-Data Multipart" it will be the prefix and a number starting with 0 will be attached to it',
+		},
+		{
+			displayName: 'Field Name for Binary Data',
+			name: 'binaryPropertyName',
+			type: 'string',
+			default: 'data',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+				}
+			},
+			description:
+				'The name of the output field to put any binary file data in. Only relevant if binary data is received.',
+		},
+		{
+			displayName: 'Ignore Bots',
+			name: 'ignoreBots',
+			type: 'boolean',
+			default: false,
+			description: 'Whether to ignore requests from bots like link previewers and web crawlers',
+		},
+		{
+			displayName: 'IP(s) Whitelist',
+			name: 'ipWhitelist',
+			type: 'string',
+			placeholder: 'e.g. 127.0.0.1',
+			default: '',
+			description: 'Comma-separated list of allowed IP addresses. Leave empty to allow all IPs.',
+		},
+		{
+			displayName: 'No Response Body',
+			name: 'noResponseBody',
+			type: 'boolean',
+			default: false,
+			description: 'Whether to send any body in the response',
+			displayOptions: {
+				hide: {
+					rawBody: [true],
+				},
+				show: {
+					'/webhookType': ['x402'],
+					'/responseMode': ['onReceived'],
+				},
+			},
+		},
+		{
+			displayName: 'Raw Body',
+			name: 'rawBody',
+			type: 'boolean',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+				},
+				hide: {
+					binaryData: [true],
+					noResponseBody: [true],
+				},
+			},
+			default: false,
+			// eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether
+			description: 'Raw body (binary)',
+		},
+		{
+			displayName: 'Raw Body',
+			name: 'rawBody',
+			type: 'boolean',
+			displayOptions: {
+				hide: {
+					noResponseBody: [true],
+				},
+				show: {
+					'/webhookType': ['x402'],
+				},
+			},
+			default: false,
+			description: 'Whether to return the raw body',
+		},
+		{
+			displayName: 'Response Data',
+			name: 'responseData',
+			type: 'string',
+			displayOptions: {
+				show: {
+					'/responseMode': ['onReceived'],
+					'/webhookType': ['x402'],
+				},
+				hide: {
+					noResponseBody: [true],
+				},
+			},
+			default: '',
+			placeholder: 'success',
+			description: 'Custom response data to send',
+		},
+		{
+			displayName: 'Response Content-Type',
+			name: 'responseContentType',
+			type: 'string',
+			displayOptions: {
+				show: {
+					'/responseData': ['firstEntryJson'],
+					'/responseMode': ['lastNode'],
+					'/webhookType': ['x402'],
+				},
+			},
+			default: '',
+			placeholder: 'application/xml',
+			// eslint-disable-next-line n8n-nodes-base/node-param-description-miscased-json
+			description:
+				'Set a custom content-type to return if another one as the "application/json" should be returned',
+		},
+		{
+			displayName: 'Response Headers',
+			name: 'responseHeaders',
+			placeholder: 'Add Response Header',
+			description: 'Add headers to the webhook response',
+			type: 'fixedCollection',
+			typeOptions: {
+				multipleValues: true,
+			},
+			default: {},
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+				},
+			},
+			options: [
 				{
-					displayName: 'Code',
-					name: 'customCode',
-					type: 'number',
-					default: 200,
-					placeholder: 'e.g. 400',
-					typeOptions: {
-						minValue: 100,
-					},
-					displayOptions: {
-						show: {
-							responseCode: ['customCode'],
+					name: 'entries',
+					displayName: 'Entries',
+					values: [
+						{
+							displayName: 'Name',
+							name: 'name',
+							type: 'string',
+							default: '',
+							description: 'Name of the header',
 						},
-					},
+						{
+							displayName: 'Value',
+							name: 'value',
+							type: 'string',
+							default: '',
+							description: 'Value of the header',
+						},
+					],
 				},
 			],
 		},
+		{
+			displayName: 'Property Name',
+			name: 'responsePropertyName',
+			type: 'string',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+					'/responseData': ['firstEntryJson'],
+					'/responseMode': ['lastNode'],
+				},
+			},
+			default: 'data',
+			description: 'Name of the property to return the data of instead of the whole JSON',
+		},
 	],
-	displayOptions: {
-		show: {
-			'@version': [{ _cnd: { gte: 2 } }],
-		},
-		hide: {
-			'/responseMode': ['responseNode'],
-		},
-	},
 };
-
-export const webhookOperationsFields: INodeProperties[] = [...webhookOperations, ...webhookFields];

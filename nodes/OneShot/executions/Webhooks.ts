@@ -72,11 +72,17 @@ async function handleX402Webhook(
 		paymentToken: { paymentToken: string; payToAddress: string; paymentAmount: number }[];
 	};
 
-	const optionalFields = this.getNodeParameter('optionalFields') as {
+	const options = this.getNodeParameter('options', {}) as {
+		binaryData: boolean;
+		ignoreBots: boolean;
+		rawBody: boolean;
+		responseData?: string;
+		ipWhitelist?: string;
 		resourceDescription: string;
 		mimeType: string;
 	};
-	const { resourceDescription, mimeType } = optionalFields;
+
+	const { resourceDescription, mimeType } = options;
 
 	const responseData = this.getNodeParameter('responseData') as string;
 
