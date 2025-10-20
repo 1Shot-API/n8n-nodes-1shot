@@ -21,6 +21,7 @@ const x402SupportedCache = new Map<string, X402SupportedCacheEntry>();
 
 export async function getX402Supported(
 	context: IExecuteFunctions | ILoadOptionsFunctions | IWebhookFunctions,
+	ignoreCache: boolean = false,
 ): Promise<X402SupportedResponse> {
 	try {
 		const credentials = await context.getCredentials('oneShotOAuth2Api');
@@ -30,7 +31,7 @@ export async function getX402Supported(
 
 		// Check the cache for a response
 		const cachedEntry = x402SupportedCache.get(clientId);
-		if (cachedEntry && cachedEntry.timestamp > Date.now() - 1000 * 60 * 5) {
+		if (cachedEntry && cachedEntry.timestamp > Date.now() - 1000 * 60 * 5 && !ignoreCache) {
 			// 5 minutes
 			return cachedEntry.response;
 		}

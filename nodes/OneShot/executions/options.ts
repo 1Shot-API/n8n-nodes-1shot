@@ -133,7 +133,7 @@ export async function loadX402TokenOptions(
 ): Promise<INodePropertyOptions[]> {
 	const options: INodePropertyOptions[] = [];
 
-	const supportedPayments = await getX402Supported(this);
+	const supportedPayments = await getX402Supported(this, true); // ignore cache for options
 
 	for (const supportedPayment of supportedPayments.kinds) {
 		// Each network and token combination is an option
