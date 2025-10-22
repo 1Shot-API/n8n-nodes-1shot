@@ -296,7 +296,7 @@ async function handleX402Webhook(
 			return generateResponse(this, req, responseMode, responseData, 'TBD', prepareOutput);
 		}
 	} catch (error) {
-		console.error('Error in x402 webhook', error);
+		this.logger.error('Error in x402 webhook', error);
 		// Return an error object if the token format is invalid
 		return generateX402Error(
 			resp,

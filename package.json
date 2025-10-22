@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-1shot",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "1Shot API node for n8n",
   "keywords": [
     "n8n-community-node-package",
@@ -48,6 +48,7 @@
       "dist/nodes/OneShot/OneShotSynch.node.js"
     ]
   },
+  "dependencies": {},
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^22.15.30",

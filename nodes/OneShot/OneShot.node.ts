@@ -166,37 +166,41 @@ export class OneShot implements INodeType {
 			if (resource === 'contractMethods') {
 				if (operation === 'execute') {
 					const response = await executeContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'executeAsDelegator') {
 					const response = await executeAsDelegatorContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'encode') {
 					const response = await encodeContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'estimate') {
 					const response = await estimateContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'simulate') {
 					const response = await simulateContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'read') {
 					const response = await readContractMethodOperation(this, i);
-					returnData.push({ response: response });
+					returnData.push({ json: { response: response } as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'list') {
 					const response = await listContractMethodsOperation(this, i);
-					returnData.push(...response.response);
+					returnData.push(
+						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else if (operation === 'get') {
 					const response = await getContractMethodOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'assureContractMethodsFromPrompt') {
 					const response = await assureContractMethodsFromPromptOperation(this, i);
-					returnData.push(...response);
+					returnData.push(
+						...response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else if (operation === 'executeBatch') {
 					const response = await executeBatchOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'executeAsDelegatorBatch') {
 					const response = await executeAsDelegatorBatchOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -206,22 +210,24 @@ export class OneShot implements INodeType {
 			} else if (resource === 'contractEvents') {
 				if (operation === 'list') {
 					const response = await listContractEventsOperation(this, i);
-					returnData.push(...response.response);
+					returnData.push(
+						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else if (operation === 'create') {
 					const response = await createContractEventOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'get') {
 					const response = await getContractEventOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'update') {
 					const response = await updateContractEventOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'delete') {
 					const response = await deleteContractEventOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'search') {
 					const response = await searchContractEventOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -231,19 +237,21 @@ export class OneShot implements INodeType {
 			} else if (resource === 'wallets') {
 				if (operation === 'list') {
 					const response = await listWalletsOperation(this, i);
-					returnData.push(...response.response);
+					returnData.push(
+						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else if (operation === 'create') {
 					const response = await createWalletOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'get') {
 					const response = await getWalletOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'update') {
 					const response = await updateWalletOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else if (operation === 'delete') {
 					const response = await deleteWalletOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -253,7 +261,7 @@ export class OneShot implements INodeType {
 			} else if (resource === 'prompts') {
 				if (operation === 'search') {
 					const response = await searchPromptsOperation(this, i);
-					returnData.push(...response);
+					returnData.push(...response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })));
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -263,10 +271,12 @@ export class OneShot implements INodeType {
 			} else if (resource === 'transactions') {
 				if (operation === 'list') {
 					const response = await listTransactionsOperation(this, i);
-					returnData.push(...response.response);
+					returnData.push(
+						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else if (operation === 'get') {
 					const response = await getTransactionOperation(this, i);
-					returnData.push(response);
+					returnData.push({ json: response as unknown as IDataObject, pairedItem: { item: i } });
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -276,7 +286,9 @@ export class OneShot implements INodeType {
 			} else if (resource === 'chains') {
 				if (operation === 'list') {
 					const response = await listChainsOperation(this, i);
-					returnData.push(...response.response);
+					returnData.push(
+						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+					);
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -288,6 +300,6 @@ export class OneShot implements INodeType {
 			}
 		}
 
-		return [this.helpers.returnJsonArray(returnData as IDataObject[])];
+		return [returnData];
 	}
 }

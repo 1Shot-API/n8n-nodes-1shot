@@ -392,37 +392,61 @@ export class OneShotSynch implements INodeType {
 				if (operation === 'execute') {
 					const response = await executeAndWaitContractMethodOperation(this, i);
 					if (response.success) {
-						returnData.push({ ...response.result } as IDataObject);
+						returnData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					} else {
-						errorData.push({ ...response.result } as IDataObject);
+						errorData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					}
 				} else if (operation === 'executeAsDelegator') {
 					const response = await executeAsDelegatorAndWaitContractMethodOperation(this, i);
 					if (response.success) {
-						returnData.push({ ...response.result } as IDataObject);
+						returnData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					} else {
-						errorData.push({ ...response.result } as IDataObject);
+						errorData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					}
 				} else if (operation === 'executeBatch') {
 					const response = await executeBatchAndWaitOperation(this, i);
 					if (response.success) {
-						returnData.push({ ...response.result } as IDataObject);
+						returnData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					} else {
-						errorData.push({ ...response.result } as IDataObject);
+						errorData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					}
 				} else if (operation === 'executeAsDelegatorBatch') {
 					const response = await executeAsDelegatorBatchAndWaitOperation(this, i);
 					if (response.success) {
-						returnData.push({ ...response.result } as IDataObject);
+						returnData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					} else {
-						errorData.push({ ...response.result } as IDataObject);
+						errorData.push({
+							json: { ...response.result } as IDataObject,
+							pairedItem: { item: i },
+						});
 					}
 				}
 			}
 		} catch (error) {
-			errorData.push({ ...error } as IDataObject);
+			errorData.push({ json: { ...error } as IDataObject, pairedItem: { item: 0 } });
 		}
 
-		return [this.helpers.returnJsonArray(returnData), this.helpers.returnJsonArray(errorData)];
+		return [returnData, errorData];
 	}
 }
