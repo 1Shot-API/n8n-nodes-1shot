@@ -1,30 +1,18 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-import { optimizeResponseProperties } from '../shared/optimizeResponse';
+// import { optimizeResponseProperties } from '../utils/optimizeResponse';
 
-const preBuiltAgentsCallout: INodeProperties = {
-	// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
-	displayName: 'Try the HTTP request tool with our pre-built',
-	name: 'preBuiltAgentsCalloutHttpRequest',
-	type: 'callout',
-	typeOptions: {
-		calloutAction: {
-			label: 'Joke agent',
-			icon: 'bot',
-			type: 'openSampleWorkflowTemplate',
-			templateId: 'joke_agent_with_http_tool',
-		},
-	},
-	default: '',
-};
-
-export const mainProperties: INodeProperties[] = [
-	preBuiltAgentsCallout,
+export const x402RequestProperties: INodeProperties[] = [
 	{
 		displayName: '',
 		name: 'curlImport',
 		type: 'curlImport',
 		default: '',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'Method',
@@ -62,6 +50,11 @@ export const mainProperties: INodeProperties[] = [
 		],
 		default: 'GET',
 		description: 'The request method to use',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'URL',
@@ -71,6 +64,11 @@ export const mainProperties: INodeProperties[] = [
 		placeholder: 'http://example.com/index.html',
 		description: 'The URL to make the request to',
 		required: true,
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'Authentication',
@@ -95,6 +93,11 @@ export const mainProperties: INodeProperties[] = [
 			},
 		],
 		default: 'none',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'Credential Type',
@@ -106,6 +109,7 @@ export const mainProperties: INodeProperties[] = [
 		credentialTypes: ['extends:oAuth2Api', 'extends:oAuth1Api', 'has:authenticate'],
 		displayOptions: {
 			show: {
+				resource: ['x402Request'],
 				authentication: ['predefinedCredentialType'],
 			},
 		},
@@ -119,6 +123,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				nodeCredentialType: ['googleApi'],
+				resource: ['x402Request'],
 			},
 		},
 	},
@@ -132,6 +137,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				authentication: ['genericCredentialType'],
+				resource: ['x402Request'],
 			},
 		},
 	},
@@ -141,6 +147,11 @@ export const mainProperties: INodeProperties[] = [
 		type: 'boolean',
 		default: false,
 		isNodeSetting: true,
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: "Provide certificates in node's 'Credential for SSL Certificates' parameter",
@@ -151,6 +162,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				provideSslCertificates: [true],
+				resource: ['x402Request'],
 			},
 		},
 	},
@@ -162,6 +174,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				provideSslCertificates: [true],
+				resource: ['x402Request'],
 			},
 		},
 	},
@@ -172,6 +185,11 @@ export const mainProperties: INodeProperties[] = [
 		default: false,
 		noDataExpression: true,
 		description: 'Whether the request has query params or not',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'Specify Query Parameters',
@@ -180,6 +198,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				sendQuery: [true],
+				resource: ['x402Request'],
 			},
 		},
 		options: [
@@ -202,6 +221,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendQuery: [true],
 				specifyQuery: ['keypair'],
+				resource: ['x402Request'],
 			},
 		},
 		typeOptions: {
@@ -245,6 +265,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendQuery: [true],
 				specifyQuery: ['json'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -264,6 +285,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				sendHeaders: [true],
+				resource: ['x402Request'],
 			},
 		},
 		options: [
@@ -286,6 +308,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendHeaders: [true],
 				specifyHeaders: ['keypair'],
+				resource: ['x402Request'],
 			},
 		},
 		typeOptions: {
@@ -329,6 +352,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendHeaders: [true],
 				specifyHeaders: ['json'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -340,6 +364,11 @@ export const mainProperties: INodeProperties[] = [
 		default: false,
 		noDataExpression: true,
 		description: 'Whether the request has a body or not',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 	{
 		displayName: 'Body Content Type',
@@ -348,6 +377,7 @@ export const mainProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				sendBody: [true],
+				resource: ['x402Request'],
 			},
 		},
 		options: [
@@ -384,6 +414,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['json'],
+				resource: ['x402Request'],
 			},
 		},
 		options: [
@@ -410,6 +441,7 @@ export const mainProperties: INodeProperties[] = [
 				sendBody: [true],
 				contentType: ['json'],
 				specifyBody: ['keypair'],
+				resource: ['x402Request'],
 			},
 		},
 		typeOptions: {
@@ -457,6 +489,7 @@ export const mainProperties: INodeProperties[] = [
 				sendBody: [true],
 				contentType: ['json'],
 				specifyBody: ['json'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -469,6 +502,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['multipart-form-data'],
+				resource: ['x402Request'],
 			},
 		},
 		typeOptions: {
@@ -550,6 +584,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['form-urlencoded'],
+				resource: ['x402Request'],
 			},
 		},
 		options: [
@@ -573,6 +608,7 @@ export const mainProperties: INodeProperties[] = [
 				sendBody: [true],
 				contentType: ['form-urlencoded'],
 				specifyBody: ['keypair'],
+				resource: ['x402Request'],
 			},
 		},
 		typeOptions: {
@@ -619,6 +655,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				specifyBody: ['string'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -632,6 +669,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['binaryData'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -645,6 +683,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['raw'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -658,6 +697,7 @@ export const mainProperties: INodeProperties[] = [
 			show: {
 				sendBody: [true],
 				contentType: ['raw'],
+				resource: ['x402Request'],
 			},
 		},
 		default: '',
@@ -845,9 +885,7 @@ export const mainProperties: INodeProperties[] = [
 					},
 				],
 				displayOptions: {
-					hide: {
-						'@version': [1, 2, 3],
-					},
+
 				},
 			},
 			{
@@ -1188,18 +1226,213 @@ export const mainProperties: INodeProperties[] = [
 			},
 		],
 	},
-	...optimizeResponseProperties.map((prop) => ({
-		...prop,
+	{
+		displayName: 'Optimize Response',
+		name: 'optimizeResponse',
+		type: 'boolean',
+		default: false,
+		noDataExpression: true,
+		description:
+			'Whether the optimize the tool response to reduce amount of data passed to the LLM that could lead to better result and reduce cost',
 		displayOptions: {
-			...prop.displayOptions,
-			show: { ...prop.displayOptions?.show, '@tool': [true] },
+			show: {
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
 		},
-	})),
+	},
+	{
+		displayName: 'Expected Response Type',
+		name: 'responseType',
+		type: 'options',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+		options: [
+			{
+				name: 'JSON',
+				value: 'json',
+			},
+			{
+				name: 'HTML',
+				value: 'html',
+			},
+			{
+				name: 'Text',
+				value: 'text',
+			},
+		],
+		default: 'json',
+	},
+	{
+		displayName: 'Field Containing Data',
+		name: 'dataField',
+		type: 'string',
+		default: '',
+		placeholder: 'e.g. records',
+		description: 'Specify the name of the field in the response containing the data',
+		hint: 'leave blank to use whole response',
+		requiresDataPath: 'single',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['json'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+	},
+	{
+		displayName: 'Include Fields',
+		name: 'fieldsToInclude',
+		type: 'options',
+		description: 'What fields response object should include',
+		default: 'all',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['json'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+		options: [
+			{
+				name: 'All',
+				value: 'all',
+				description: 'Include all fields',
+			},
+			{
+				name: 'Selected',
+				value: 'selected',
+				description: 'Include only fields specified below',
+			},
+			{
+				name: 'Except',
+				value: 'except',
+				description: 'Exclude fields specified below',
+			},
+		],
+	},
+	{
+		displayName: 'Fields',
+		name: 'fields',
+		type: 'string',
+		default: '',
+		placeholder: 'e.g. field1,field2',
+		description:
+			'Comma-separated list of the field names. Supports dot notation. You can drag the selected fields from the input panel.',
+		requiresDataPath: 'multiple',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['json'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+			hide: {
+				fieldsToInclude: ['all'],
+			},
+		},
+	},
+	{
+		displayName: 'Selector (CSS)',
+		name: 'cssSelector',
+		type: 'string',
+		description:
+			'Select specific element(e.g. body) or multiple elements(e.g. div) of chosen type in the response HTML.',
+		placeholder: 'e.g. body',
+		default: 'body',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['html'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+	},
+	{
+		displayName: 'Return Only Content',
+		name: 'onlyContent',
+		type: 'boolean',
+		default: false,
+		description:
+			'Whether to return only content of html elements, stripping html tags and attributes',
+		hint: 'Uses less tokens and may be easier for model to understand',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['html'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+	},
+	{
+		displayName: 'Elements To Omit',
+		name: 'elementsToOmit',
+		type: 'string',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['html'],
+				onlyContent: [true],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+		default: '',
+		placeholder: 'e.g. img, .className, #ItemId',
+		description: 'Comma-separated list of selectors that would be excluded when extracting content',
+	},
+	{
+		displayName: 'Truncate Response',
+		name: 'truncateResponse',
+		type: 'boolean',
+		default: false,
+		hint: 'Helps save tokens',
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['text', 'html'],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+	},
+	{
+		displayName: 'Max Response Characters',
+		name: 'maxLength',
+		type: 'number',
+		default: 1000,
+		typeOptions: {
+			minValue: 1,
+		},
+		displayOptions: {
+			show: {
+				optimizeResponse: [true],
+				responseType: ['text', 'html'],
+				truncateResponse: [true],
+				'@tool': [true],
+				resource: ['x402Request'],
+			},
+		},
+	},
 	{
 		displayName:
 			"You can view the raw requests this node makes in your browser's developer console",
 		name: 'infoMessage',
 		type: 'notice',
 		default: '',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 	},
 ];
