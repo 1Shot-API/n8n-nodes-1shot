@@ -1730,6 +1730,139 @@ paths:
         500:
           $ref: "#/components/responses/DatabaseError"
 
+  /wallets/{walletId}/signature/{type}:
+    get:
+      tags:
+        - Wallets
+        - Get
+      description: Gets a signature from a Wallet. 1Shot supports several different types of signatures, including ERC-3009 (transferWithAuthorization) and Permit2
+      parameters:
+        - name: walletId
+          in: path
+          description: The ID of the wallet
+          required: true
+          schema:
+            $ref: "#/components/schemas/WalletId"
+        - name: type
+          in: path
+          description: The type of signature to get. Currently, only erc3009 and permit2 are supported. The other parameters depend on the type of signature.
+          required: true
+          schema:
+            type: string
+            enum:
+              - erc3009
+              - permit2
+        - name: contractAddress
+          in: query
+          description: The contract address of the token that you are getting a signature for, such as USDC.
+          required: true
+          schema:
+            $ref: "#/components/schemas/ContractAddress"
+        - name: destinationAddress
+          in: query
+          description: The address of the destination that the transfer will be sent to, such as a user's wallet address or another contract.
+          required: true
+          schema:
+            $ref: "#/components/schemas/AccountAddress"
+        - name: amount
+          in: query
+          description: The amount of the token to transfer. This is in Wei, and depends on the number of decimals of the token. Make sure you know the details of the token you are transferring!
+          required: false
+          schema:
+            type: string
+            format: big-number-string
+            example: "123400"
+        - name: validUntil
+          in: query
+          description: The timestamp until which the signature is valid. This is in seconds since the Unix epoch. For Permit2 signatures, this is the "deadline" value.
+          required: false
+          schema:
+            type: number
+            format: unix-timestamp
+            example: 1659485172
+        - name: validAfter
+          in: query
+          description: The timestamp after which the signature is valid. This is in seconds since the Unix epoch. This is inused for Permit2 signatures and will produce an error if it is provided.
+          required: false
+          schema:
+            type: number
+            format: unix-timestamp
+            example: 1659485172
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: "The signature and the data that was signed."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signature:
+                    type: string
+                    format: hex-string
+                    description: The signature of the transfer.
+                    example: "0x1234567890abcdef"
+                  data:
+                    type: string
+                    format: json-string
+                    description: The actual data that was signed.
+        403:
+          $ref: "#/components/responses/PermissionError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
+  /wallets/{walletId}/authorizePermit2:
+    put:
+      tags:
+        - Wallets
+        - Update
+      description: Authorizes Permit2 for a wallet. This allows the wallet to use Permit2 transfers without requiring individual signatures for each transaction.
+      parameters:
+        - name: walletId
+          in: path
+          description: The ID of the wallet to authorize Permit2 for
+          required: true
+          schema:
+            $ref: "#/components/schemas/WalletId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contractAddress:
+                  $ref: "#/components/schemas/ContractAddress"
+                  description: The contract address of the token to authorize Permit2 for
+                  example: "0x1234567890abcdef"
+              required:
+                - contractAddress
+      security:
+        - OAuth2ClientCredentials:
+          - read:api
+      responses:
+        200:
+          description: Successfully authorized Permit2 for the wallet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the authorization was successful
+                    example: true
+        403:
+          $ref: "#/components/responses/PermissionError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/DatabaseError"
+
   /delegation/{delegationId}:
     delete:
       tags:
@@ -2413,6 +2546,11 @@ components:
             isAdmin:
               type: boolean
               description: Whether or not the wallet is an admin wallet, used for internal purposes.
+            permit2AuthorizedContractAddresses:
+              type: array
+              items:
+                $ref: "#/components/schemas/ContractAddress"
+              description: The contract addresses of the tokens that the wallet is authorized to use Permit2 for.
             accountBalanceDetails:
               allOf:
                 - $ref: "#/components/schemas/AccountBalanceDetails"
@@ -2427,6 +2565,7 @@ components:
             - name
             - description
             - isAdmin
+            - permit2AuthorizedContractAddresses
         - $ref: "#/components/schemas/EntityBookKeepingWithoutDeleted"
 
     AccountBalanceDetails:

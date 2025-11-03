@@ -247,3 +247,45 @@ export async function deleteWallet(
 		throw error;
 	}
 }
+
+export async function getSignature(
+	context: IExecuteFunctions | ILoadOptionsFunctions,
+	walletId: string,
+	type: 'erc3009' | 'permit2',
+	contractAddress: string,
+	destinationAddress: string,
+	amount: string,
+	validUntil: number,
+	validAfter?: number,
+): Promise<{ signature: string; data: string }> {
+	try {
+		const response: { signature: string; data: string } =
+			await context.helpers.requestWithAuthentication.call(
+				context,
+				'oneShotOAuth2Api',
+				{
+					method: 'GET',
+					url: `/wallets/${walletId}/signature/${type}`,
+					qs: {
+						contractAddress,
+						destinationAddress,
+						amount: amount,
+						validUntil: validUntil,
+						validAfter: validAfter ?? undefined,
+					},
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+					},
+					json: true,
+					baseURL: oneshotApiBaseUrl,
+				},
+				additionalCredentialOptions,
+			);
+
+		return response;
+	} catch (error) {
+		context.logger.error(`Error getting signature ${error.message}`, { error });
+		throw error;
+	}
+}
