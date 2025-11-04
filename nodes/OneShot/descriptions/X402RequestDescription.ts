@@ -4,6 +4,26 @@ import type { INodeProperties } from 'n8n-workflow';
 
 export const x402RequestProperties: INodeProperties[] = [
 	{
+		displayName: 'Operation',
+		name: 'operation',
+		type: 'options',
+		noDataExpression: true,
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
+		options: [
+			{
+				name: 'X402 HTTP Request',
+				value: 'x402',
+				description: 'Make an HTTP request to an x402-enabled API endpoint. Any fee will be paid using a 1Shot Wallet.',
+				action: 'HTTP Request',
+			},
+		],
+		default: 'x402',
+	},
+	{
 		displayName: '',
 		name: 'curlImport',
 		type: 'curlImport',
@@ -13,6 +33,23 @@ export const x402RequestProperties: INodeProperties[] = [
 				resource: ['x402Request'],
 			},
 		},
+	},
+	{
+		displayName: 'Wallet Name or ID',
+		name: 'walletId',
+		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'loadWalletOptions',
+		},
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
+		default: '',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 	{
 		displayName: 'Method',

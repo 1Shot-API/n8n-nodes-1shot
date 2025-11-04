@@ -49,6 +49,19 @@ export async function deleteWalletOperation(context: IExecuteFunctions, index: n
 	return await deleteWallet(context, walletId);
 }
 
+export async function getSignatureOperation(context: IExecuteFunctions, index: number, payTo: string, asset: string, amount: string): Promise<{ signature: string; data: string }> {
+	const walletId = context.getNodeParameter('walletId', index) as string;
+	const type = 'erc3009';
+
+	// Set some reasonable time defaults
+	const now = Math.floor(Date.now() / 1000);
+	const validUntil = now + 90; // 90 seconds
+	const validAfter = now - 90 // 90 seconds ago
+	const signatureResponse = await getSignature(context, walletId, type, asset, payTo, amount, validUntil, validAfter);
+
+	return signatureResponse;
+}
+
 export async function loadWalletOptions(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {

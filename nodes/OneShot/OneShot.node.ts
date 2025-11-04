@@ -36,6 +36,7 @@ import {
 import {
 	createWalletOperation,
 	deleteWalletOperation,
+	getSignatureOperation,
 	getWalletOperation,
 	listWalletsOperation,
 	loadWalletOptions,
@@ -74,6 +75,7 @@ import { Readable } from 'stream';
 import { setNestedProperty } from './utils/lodashFunctions';
 import { setFilename } from './utils/binaryData';
 import { mimeTypeFromResponse } from './utils/parse';
+import { IPaymentRequirements } from './types/1shot';
 
 export class OneShot implements INodeType {
 	description: INodeTypeDescription = {
@@ -95,17 +97,17 @@ export class OneShot implements INodeType {
 				name: 'oneShotOAuth2Api',
 				required: true,
 			},
-			{
-				// eslint-disable-next-line n8n-nodes-base/node-class-description-credentials-name-unsuffixed
-				name: 'httpSslAuth',
-				required: true,
-				displayOptions: {
-					show: {
-						provideSslCertificates: [true],
-						resource: ['x402Request'],
-					},
-				},
-			},
+			// {
+			// 	// eslint-disable-next-line n8n-nodes-base/node-class-description-credentials-name-unsuffixed
+			// 	name: 'httpSslAuth',
+			// 	required: true,
+			// 	displayOptions: {
+			// 		show: {
+			// 			provideSslCertificates: [true],
+			// 			resource: ['x402Request'],
+			// 		},
+			// 	},
+			// },
 		],
 		requestDefaults: {
 			baseURL: oneshotApiBaseUrl,
@@ -154,10 +156,6 @@ export class OneShot implements INodeType {
 						name: 'Prompt',
 						value: 'prompts',
 					},
-					// {
-					// 	name: 'Struct',
-					// 	value: 'structs',
-					// },
 					{
 						name: 'Transaction',
 						value: 'transactions',
@@ -195,6 +193,11 @@ export class OneShot implements INodeType {
 	async execute(this: IExecuteFunctions) {
 		const items = this.getInputData();
 		const returnData = [];
+
+		// x402Requests are crazy complicated, copied from the default node
+		if (this.getNodeParameter('resource') === 'x402Request') {
+			return await executeX402RequestOperation.call(this);
+		}
 
 		for (let i = 0; i < items.length; i++) {
 			const resource = this.getNodeParameter('resource', i) as string;
@@ -332,8 +335,6 @@ export class OneShot implements INodeType {
 						`Unsupported operation for resource chains: ${operation}`,
 					);
 				}
-			} else if (resource === 'x402Request') {
-				return await executeX402RequestOperation.call(this);
 			} else {
 				throw new NodeOperationError(this.getNode(), `Unsupported resource: ${resource}`);
 			}
@@ -985,6 +986,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 						paginationData,
 						nodeCredentialType ?? genericCredentialType,
 					)
+					// TODO: Figure out x402 in paginated requests
 					.catch((error) => {
 						if (error instanceof NodeOperationError && error.type === 'invalid_url') {
 							const urlParameterName =
@@ -1003,8 +1005,16 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 						this,
 						'oAuth1Api',
 						requestOptions,
-					);
-					requestOAuth1.catch(() => {});
+					).catch(async (response) => {
+						if (response.statusCode === 402) {
+							// Generate an x402 payment header
+							const decodedError = JSON.parse(response.error) as IX402Response;
+							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+							requestOptions.headers!['x-payment'] = paymentHeader;
+							return this.helpers.request(requestOptions);
+						}
+						return;
+					});
 					requestPromises.push(requestOAuth1);
 				} else if (oAuth2Api) {
 					const requestOAuth2 = this.helpers.requestOAuth2.call(
@@ -1014,13 +1024,29 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 						{
 							tokenType: 'Bearer',
 						},
-					);
-					requestOAuth2.catch(() => {});
+					).catch(async (response) => {
+						if (response.statusCode === 402) {
+							// Generate an x402 payment header
+							const decodedError = JSON.parse(response.error) as IX402Response;
+							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+							requestOptions.headers!['x-payment'] = paymentHeader;
+							return this.helpers.request(requestOptions);
+						}
+						return;
+					});
 					requestPromises.push(requestOAuth2);
 				} else {
 					// bearerAuth, queryAuth, headerAuth, digestAuth, none
-					const request = this.helpers.request(requestOptions);
-					request.catch(() => {});
+					const request = this.helpers.request(requestOptions).catch(async (response) => {
+						if (response.statusCode === 402) {
+							// Generate an x402 payment header
+							const decodedError = JSON.parse(response.error) as IX402Response;
+							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+							requestOptions.headers!['x-payment'] = paymentHeader;
+							return this.helpers.request(requestOptions);
+						}
+						return;
+					});
 					requestPromises.push(request);
 				}
 			} else if (authentication === 'predefinedCredentialType' && nodeCredentialType) {
@@ -1034,7 +1060,20 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					requestOptions,
 					additionalOAuth2Options && { oauth2: additionalOAuth2Options },
 					itemIndex,
-				);
+				).then(async (response) => {
+					if (response.statusCode === 402) {
+						// Generate an x402 payment header
+						const paymentHeader = await generateX402PaymentHeader.call(this, response);
+						requestOptions.headers!['x-payment'] = paymentHeader;
+						return this.helpers.requestWithAuthentication.call(
+							this,
+							nodeCredentialType!,
+							requestOptions,
+							additionalOAuth2Options && { oauth2: additionalOAuth2Options },
+							itemIndex,);
+					}
+					return response;
+				});
 				requestWithAuthentication.catch(() => {});
 				requestPromises.push(requestWithAuthentication);
 			}
@@ -1386,4 +1425,42 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 	}
 
 	return [returnItems];
+}
+
+async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX402Response): Promise<string> {
+	// We are going to just use the first payment config for now.
+	const paymentConfig = response.error.paymentConfigs[0];
+
+	if (!paymentConfig) {
+		throw new NodeOperationError(this.getNode(), 'No payment config found');
+	}
+
+	if (paymentConfig.scheme !== 'exact') {
+		throw new NodeOperationError(this.getNode(), 'Only exact scheme is supported for now');
+	}
+
+  const {signature, data} = await getSignatureOperation(this, 0, paymentConfig.payTo, paymentConfig.asset, paymentConfig.maxAmountRequired);
+
+	// Now we have to create the full x402 payment header
+	const xPaymentObject = {
+    x402Version: 1,
+    scheme: "exact",
+    network: paymentConfig.network,
+    payload: {
+      authorization: JSON.parse(data),
+      signature: signature,
+    },
+  };
+
+  const jsonString = JSON.stringify(xPaymentObject);
+  const base64Encoded = Buffer.from(jsonString, "utf-8").toString("base64");
+
+	return base64Encoded;
+}
+
+interface IX402Response {
+	error: {
+		errorMessage: string;
+		paymentConfigs: IPaymentRequirements[],
+	};
 }
