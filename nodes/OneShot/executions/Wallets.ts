@@ -49,6 +49,19 @@ export async function deleteWalletOperation(context: IExecuteFunctions, index: n
 	return await deleteWallet(context, walletId);
 }
 
+export async function getSignatureOperation(context: IExecuteFunctions, index: number, payTo: string, asset: string, amount: string): Promise<{ signature: string; data: string }> {
+	const walletId = context.getNodeParameter('walletId', index) as string;
+	const type = 'erc3009';
+
+	// Set some reasonable time defaults
+	const now = Math.floor(Date.now() / 1000);
+	const validUntil = now + 90; // 90 seconds
+	const validAfter = now - 90 // 90 seconds ago
+	const signatureResponse = await getSignature(context, walletId, type, asset, payTo, amount, validUntil, validAfter);
+
+	return signatureResponse;
+}
+
 export async function loadWalletOptions(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
@@ -244,6 +257,48 @@ export async function deleteWallet(
 		return response;
 	} catch (error) {
 		context.logger.error(`Error deleting wallet ${error.message}`, { error });
+		throw error;
+	}
+}
+
+export async function getSignature(
+	context: IExecuteFunctions | ILoadOptionsFunctions,
+	walletId: string,
+	type: 'erc3009' | 'permit2',
+	contractAddress: string,
+	destinationAddress: string,
+	amount: string,
+	validUntil: number,
+	validAfter?: number,
+): Promise<{ signature: string; data: string }> {
+	try {
+		const response: { signature: string; data: string } =
+			await context.helpers.requestWithAuthentication.call(
+				context,
+				'oneShotOAuth2Api',
+				{
+					method: 'GET',
+					url: `/wallets/${walletId}/signature/${type}`,
+					qs: {
+						contractAddress,
+						destinationAddress,
+						amount: amount,
+						validUntil: validUntil,
+						validAfter: validAfter ?? undefined,
+					},
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+					},
+					json: true,
+					baseURL: oneshotApiBaseUrl,
+				},
+				additionalCredentialOptions,
+			);
+
+		return response;
+	} catch (error) {
+		context.logger.error(`Error getting signature ${error.message}`, { error });
 		throw error;
 	}
 }
