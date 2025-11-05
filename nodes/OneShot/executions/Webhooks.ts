@@ -289,11 +289,22 @@ async function handleX402Webhook(
 				responseMode,
 				responseData,
 				settleResponse.txHash,
+				paymentRequirements,
+				decodedXPaymentJson,
 				prepareOutput,
 			);
 		} catch (error) {
 			this.logger.error('Error in x402 webhook settlement, moving on...', error);
-			return generateResponse(this, req, responseMode, responseData, 'TBD', prepareOutput);
+			return generateResponse(
+				this,
+				req,
+				responseMode,
+				responseData,
+				'TBD',
+				paymentRequirements,
+				decodedXPaymentJson,
+				prepareOutput,
+			);
 		}
 	} catch (error) {
 		this.logger.error('Error in x402 webhook', error);
@@ -312,6 +323,8 @@ function generateResponse(
 	responseMode: string,
 	responseData: string,
 	txHash: string,
+	paymentRequirements: IPaymentRequirements[],
+	paymentPayload: IPaymentPayload,
 	prepareOutput: (data: INodeExecutionData) => INodeExecutionData[][],
 ) {
 	const response: INodeExecutionData = {
@@ -321,6 +334,8 @@ function generateResponse(
 			query: req.query,
 			body: req.body,
 			txHash: txHash,
+			paymentRequirements: paymentRequirements,
+			paymentPayload: paymentPayload,
 		},
 	};
 	if (responseMode === 'streaming') {
