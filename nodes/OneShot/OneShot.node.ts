@@ -75,7 +75,7 @@ import { Readable } from 'stream';
 import { setNestedProperty } from './utils/lodashFunctions';
 import { setFilename } from './utils/binaryData';
 import { mimeTypeFromResponse } from './utils/parse';
-import { IPaymentRequirements } from './types/1shot';
+import { IX402ErrorResponse } from './types/1shot';
 
 export class OneShot implements INodeType {
 	description: INodeTypeDescription = {
@@ -1008,7 +1008,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					).catch(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402Response;
+							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 							requestOptions.headers!['x-payment'] = paymentHeader;
 							return this.helpers.request(requestOptions);
@@ -1027,7 +1027,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					).catch(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402Response;
+							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 							requestOptions.headers!['x-payment'] = paymentHeader;
 							return this.helpers.request(requestOptions);
@@ -1040,7 +1040,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					const request = this.helpers.request(requestOptions).catch(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402Response;
+							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 							requestOptions.headers!['x-payment'] = paymentHeader;
 							return this.helpers.request(requestOptions);
@@ -1427,9 +1427,9 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 	return [returnItems];
 }
 
-async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX402Response): Promise<string> {
+async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX402ErrorResponse): Promise<string> {
 	// We are going to just use the first payment config for now.
-	const paymentConfig = response.error.paymentConfigs[0];
+	const paymentConfig = response.accepts[0];
 
 	if (!paymentConfig) {
 		throw new NodeOperationError(this.getNode(), 'No payment config found');
@@ -1456,11 +1456,4 @@ async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX40
   const base64Encoded = Buffer.from(jsonString, "utf-8").toString("base64");
 
 	return base64Encoded;
-}
-
-interface IX402Response {
-	error: {
-		errorMessage: string;
-		paymentConfigs: IPaymentRequirements[],
-	};
 }

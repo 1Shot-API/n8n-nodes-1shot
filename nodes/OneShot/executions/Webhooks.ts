@@ -6,7 +6,7 @@ import {
 } from 'n8n-workflow';
 import { verifyAsync } from '../crypto/ED25519';
 import { getX402Supported, settleX402Payment, verifyX402Payment } from './x402';
-import { IPaymentPayload, IPaymentRequirements } from '../types/1shot';
+import { IPaymentPayload, IPaymentRequirements, IX402ErrorResponse } from '../types/1shot';
 import { isIpWhitelisted, setupOutputConnection } from '../utils/webhookUtils';
 // import { rm, } from 'fs/promises';
 import type * as express from 'express';
@@ -216,16 +216,7 @@ async function handleX402Webhook(
 
 		const validation = validateXPayment(decodedXPaymentJson);
 		if (validation != 'valid') {
-			resp.writeHead(402, { 'Content-Type': 'application/json' });
-			resp.end(
-				JSON.stringify({
-					error: {
-						errorMessage: 'x-payment header is not valid',
-						paymentConfigs: paymentRequirements,
-					},
-				}),
-			);
-			return { noWebhookResponse: true };
+			return generateX402Error(resp, 'x-payment header is not valid', paymentRequirements);
 		}
 
 		const verification = verifyPaymentDetails(decodedXPaymentJson, paymentRequirements);
@@ -271,15 +262,11 @@ async function handleX402Webhook(
 			);
 
 			if (!settleResponse.success) {
-				resp.writeHead(402, { 'Content-Type': 'application/json' });
-				resp.end(
-					JSON.stringify({
-						error: {
-							errorMessage: `x-payment settlement failed: ${settleResponse.error}`,
-						},
-					}),
+				return generateX402Error(
+					resp,
+					`x-payment settlement failed: ${settleResponse.error}`,
+					paymentRequirements,
 				);
-				return { noWebhookResponse: true };
 			}
 
 			// Payment is settled, now we need to return the workflow data
@@ -372,11 +359,10 @@ function generateX402Error(
 	resp.writeHead(402, { 'Content-Type': 'application/json' });
 	resp.end(
 		JSON.stringify({
-			error: {
-				errorMessage,
-				paymentConfigs: paymentRequirements,
-			},
-		}),
+			x402Version: 1,
+			error: errorMessage,
+			accepts: paymentRequirements,
+		} as IX402ErrorResponse),
 	);
 	return { noWebhookResponse: true };
 }
