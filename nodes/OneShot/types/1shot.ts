@@ -308,6 +308,7 @@ export interface IPaymentRequirements {
 	maxTimeoutSeconds: number;
 	asset: string; // EVM Contract Address
 	extra: {
+		// Name and version are required for the "exact" scheme
 		name: string;
 		version: string;
 	};
@@ -352,4 +353,10 @@ export interface X402SettleResponse {
 	error: string;
 	txHash: string;
 	networkId: EX402Network;
+}
+
+export interface IX402ErrorResponse {
+	x402Version: number;
+	error: string;
+	accepts: IPaymentRequirements[];
 }
