@@ -201,6 +201,7 @@ async function handleX402Webhook(
 	}
 
 	// If there's no x-payment header, return a 402 error with payment details
+	// TODO: Agent thinks this should not have the negation on it, I think it's right, but it currently works.
 	const xPaymentHeader = headers['x-payment'];
 	if (!xPaymentHeader == null || typeof xPaymentHeader !== 'string') {
 		return generateX402Error(resp, 'No x-payment header provided', paymentRequirements);

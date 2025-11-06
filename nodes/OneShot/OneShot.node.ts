@@ -75,7 +75,7 @@ import { Readable } from 'stream';
 import { setNestedProperty } from './utils/lodashFunctions';
 import { setFilename } from './utils/binaryData';
 import { mimeTypeFromResponse } from './utils/parse';
-import { IX402ErrorResponse } from './types/1shot';
+import { IEIP3009Authorization, IX402ErrorResponse } from './types/1shot';
 
 export class OneShot implements INodeType {
 	description: INodeTypeDescription = {
@@ -1442,12 +1442,18 @@ async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX40
   const {signature, data} = await getSignatureOperation(this, 0, paymentConfig.payTo, paymentConfig.asset, paymentConfig.maxAmountRequired);
 
 	// Now we have to create the full x402 payment header
+  const authorization = JSON.parse(data) as IEIP3009Authorization;
+
+	// 1Shot returns the validBefore/validAfter as an int, but we need to convert them to a string
+	authorization.validAfter = authorization.validAfter.toString();
+	authorization.validBefore = authorization.validBefore.toString();
+
 	const xPaymentObject = {
     x402Version: 1,
     scheme: "exact",
     network: paymentConfig.network,
     payload: {
-      authorization: JSON.parse(data),
+      authorization: authorization,
       signature: signature,
     },
   };

@@ -319,16 +319,18 @@ export interface IPaymentPayload {
 	scheme: string;
 	network: string;
 	payload: {
-		authorization: {
-			from: string;
-			to: string;
-			value: string;
-			validAfter: string;
-			validBefore: string;
-			nonce: string;
-		};
+		authorization: IEIP3009Authorization;
 		signature: string;
 	};
+}
+
+export interface IEIP3009Authorization {
+	from: string;
+	to: string;
+	value: string;
+	validAfter: string;
+	validBefore: string;
+	nonce: string;
 }
 
 export interface X402VerifyRequest {
