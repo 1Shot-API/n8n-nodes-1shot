@@ -11,6 +11,10 @@ import { isIpWhitelisted, setupOutputConnection } from '../utils/webhookUtils';
 // import { rm, } from 'fs/promises';
 import type * as express from 'express';
 
+// Static data did not seem to update quickly enough, so we'll use a global variable to track the registration process.
+// This will have problems if you are running multiple instances of the node.
+let x402ScanRegistrationInProcess = false;
+
 export async function webhookTrigger(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 	const webhookType = this.getNodeParameter('webhookType') as string;
 	const body = this.getBodyData();
@@ -59,6 +63,9 @@ async function handleX402Webhook(
 	_body: IDataObject,
 ): Promise<IWebhookResponseData> {
 	const responseMode = this.getNodeParameter('responseMode', 'onReceived') as string;
+
+	// We will store whether or not the node has registered on x402Scan.
+	const nodeStaticData = this.getWorkflowStaticData('node');
 
 	const options = this.getNodeParameter('options', {}) as {
 		binaryData: boolean;
@@ -133,19 +140,42 @@ async function handleX402Webhook(
 	const supportedTokens = await getX402Supported(this);
 
 	// We need to figure out which of the tokens have been configured for this node
-	const configuredTokens = this.getNodeParameter('tokens') as {
+	let configuredTokens = this.getNodeParameter('tokens') as {
 		paymentToken: { paymentToken: string; payToAddress: string; paymentAmount: number }[];
 	};
+
+	if (configuredTokens == null) {
+		configuredTokens = {paymentToken: []};
+	}
 
 	const { resourceDescription, mimeType } = options;
 
 	const responseData = this.getNodeParameter('responseData') as string;
+	const httpMethod = this.getNodeParameter('httpMethod') as string;
 
 	const webhookUrl = this.getNodeWebhookUrl('default');
 	if (webhookUrl == null) {
 		resp.writeHead(403);
 		resp.end('webhookUrl not found');
 		return { noWebhookResponse: true };
+	}
+
+	const shouldRegisterWithX402Scan = nodeStaticData.x402ScanRegistered != webhookUrl &&
+	!x402ScanRegistrationInProcess &&
+	(httpMethod === 'POST' || httpMethod === 'GET'); // Only register for POST and GET methods, X402 scan does not support other verbs
+
+	// We'll register the webhook with x402Scan if it's not already registered.
+	if (shouldRegisterWithX402Scan) {
+		try {
+			x402ScanRegistrationInProcess = true;
+			await registerWebhookWithX402Scan(this, webhookUrl);
+			nodeStaticData.x402ScanRegistered = webhookUrl;
+			x402ScanRegistrationInProcess = false;
+			this.logger.info('Successfully registered workflow on x402Scan');
+		} catch (err) {
+			this.logger.error('Error registering node on x402Scan:', err);
+			x402ScanRegistrationInProcess = false;
+		}
 	}
 
 	// We are going to loop over the configured tokens- only those are the supported ones.
@@ -186,9 +216,9 @@ async function handleX402Webhook(
 				kind.network,
 				configuredToken.paymentAmount.toString(),
 				webhookUrl,
-				resourceDescription,
-				mimeType,
-				{},
+				resourceDescription || 'OneShot API Webhook',
+				mimeType || 'application/json',
+				undefined, // outputSchema is optional
 				configuredToken.payToAddress,
 				60,
 				supportedToken.contractAddress,
@@ -547,6 +577,32 @@ function verifyPaymentDetails(
 	};
 }
 
+async function registerWebhookWithX402Scan(context: IWebhookFunctions, webhookUrl: string) {
+	context.logger.info(`Registering webhook with X402Scan: ${webhookUrl}`);
+	const response = await context.helpers.request.call(context, {
+		method: 'POST',
+		url: 'https://www.x402scan.com/api/trpc/public.resources.register',
+		body: {
+			'0': {
+				json: {
+					url: webhookUrl,
+					headers: {},
+				},
+			},
+		},
+		qs: {
+			batch: 1,
+		},
+		headers: {
+			Accept: 'application/json',
+			'Content-Type': 'application/json',
+		},
+		json: true,
+		timeout: 15000, // 15 seconds timeout
+	});
+	context.logger.debug('X402Scan registration response', response);
+}
+
 class PaymentRequirements implements IPaymentRequirements {
 	public constructor(
 		public scheme: string,
@@ -555,7 +611,7 @@ class PaymentRequirements implements IPaymentRequirements {
 		public resource: string,
 		public description: string,
 		public mimeType: string,
-		public outputSchema: any,
+		public outputSchema: Record<string, unknown> | undefined,
 		public payTo: string,
 		public maxTimeoutSeconds: number,
 		public asset: string,
