@@ -12,7 +12,6 @@ import type { SecureContextOptions } from 'tls';
 import { setSafeObjectProperty } from './n8nUtils';
 import { getNestedProperty, setNestedProperty } from './lodashFunctions';
 
-
 export type HttpSslAuthCredentials = {
 	ca?: string;
 	cert?: string;
@@ -40,7 +39,7 @@ export const replaceNullValues = (item: INodeExecutionData) => {
 export const REDACTED = '**hidden**';
 
 function isObject(obj: unknown): obj is IDataObject {
-	return !!obj && (obj.constructor === Object || Object.getPrototypeOf(obj) === null)
+	return !!obj && (obj.constructor === Object || Object.getPrototypeOf(obj) === null);
 }
 
 function redact<T = unknown>(obj: T, secrets: string[]): T {

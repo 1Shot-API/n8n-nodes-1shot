@@ -69,7 +69,20 @@ import { searchPromptsOperation } from './executions/Prompts';
 import { chainOperationsFields } from './descriptions/ChainDescription';
 import { listChainsOperation } from './executions/Chains';
 import { x402RequestProperties } from './descriptions/X402RequestDescription';
-import { binaryContentTypes, BodyParameter, getOAuth2AdditionalParameters, getSecrets, IAuthDataSanitizeKeys, prepareRequestBody, reduceAsync, replaceNullValues, sanitizeUiMessage, setAgentOptions, toText, updadeQueryParameterConfig } from './utils/genericRequestFunctions';
+import {
+	binaryContentTypes,
+	BodyParameter,
+	getOAuth2AdditionalParameters,
+	getSecrets,
+	IAuthDataSanitizeKeys,
+	prepareRequestBody,
+	reduceAsync,
+	replaceNullValues,
+	sanitizeUiMessage,
+	setAgentOptions,
+	toText,
+	updadeQueryParameterConfig,
+} from './utils/genericRequestFunctions';
 import { isDomainAllowed, keysToLowercase } from './utils/n8nUtils';
 import { Readable } from 'stream';
 import { setNestedProperty } from './utils/lodashFunctions';
@@ -225,7 +238,10 @@ export class OneShot implements INodeType {
 				} else if (operation === 'list') {
 					const response = await listContractMethodsOperation(this, i);
 					returnData.push(
-						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else if (operation === 'get') {
 					const response = await getContractMethodOperation(this, i);
@@ -233,7 +249,10 @@ export class OneShot implements INodeType {
 				} else if (operation === 'assureContractMethodsFromPrompt') {
 					const response = await assureContractMethodsFromPromptOperation(this, i);
 					returnData.push(
-						...response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else if (operation === 'executeBatch') {
 					const response = await executeBatchOperation(this, i);
@@ -251,7 +270,10 @@ export class OneShot implements INodeType {
 				if (operation === 'list') {
 					const response = await listContractEventsOperation(this, i);
 					returnData.push(
-						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else if (operation === 'create') {
 					const response = await createContractEventOperation(this, i);
@@ -278,7 +300,10 @@ export class OneShot implements INodeType {
 				if (operation === 'list') {
 					const response = await listWalletsOperation(this, i);
 					returnData.push(
-						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else if (operation === 'create') {
 					const response = await createWalletOperation(this, i);
@@ -301,7 +326,12 @@ export class OneShot implements INodeType {
 			} else if (resource === 'prompts') {
 				if (operation === 'search') {
 					const response = await searchPromptsOperation(this, i);
-					returnData.push(...response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })));
+					returnData.push(
+						...response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
+					);
 				} else {
 					throw new NodeOperationError(
 						this.getNode(),
@@ -312,7 +342,10 @@ export class OneShot implements INodeType {
 				if (operation === 'list') {
 					const response = await listTransactionsOperation(this, i);
 					returnData.push(
-						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else if (operation === 'get') {
 					const response = await getTransactionOperation(this, i);
@@ -327,7 +360,10 @@ export class OneShot implements INodeType {
 				if (operation === 'list') {
 					const response = await listChainsOperation(this, i);
 					returnData.push(
-						...response.response.map((item) => ({ json: item as unknown as IDataObject, pairedItem: { item: i } })),
+						...response.response.map((item) => ({
+							json: item as unknown as IDataObject,
+							pairedItem: { item: i },
+						})),
 					);
 				} else {
 					throw new NodeOperationError(
@@ -344,7 +380,9 @@ export class OneShot implements INodeType {
 	}
 }
 
-async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+async function executeX402RequestOperation(
+	this: IExecuteFunctions,
+): Promise<INodeExecutionData[][]> {
 	const items = this.getInputData();
 	const nodeVersion = this.getNode().typeVersion;
 
@@ -759,13 +797,9 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					try {
 						JSON.parse(jsonQueryParameter);
 					} catch {
-						throw new NodeOperationError(
-							this.getNode(),
-							'JSON parameter needs to be valid JSON',
-							{
-								itemIndex,
-							},
-						);
+						throw new NodeOperationError(this.getNode(), 'JSON parameter needs to be valid JSON', {
+							itemIndex,
+						});
 					}
 
 					requestOptions.qs = jsonParse(jsonQueryParameter);
@@ -785,13 +819,9 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					try {
 						JSON.parse(jsonHeadersParameter);
 					} catch {
-						throw new NodeOperationError(
-							this.getNode(),
-							'JSON parameter needs to be valid JSON',
-							{
-								itemIndex,
-							},
-						);
+						throw new NodeOperationError(this.getNode(), 'JSON parameter needs to be valid JSON', {
+							itemIndex,
+						});
 					}
 
 					additionalHeaders = jsonParse(jsonHeadersParameter);
@@ -934,11 +964,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 					// Iterate over all parameters and add them to the request
 					paginationData.request = {};
 					const { parameters } = pagination.parameters;
-					if (
-						parameters.length === 1 &&
-						parameters[0].name === '' &&
-						parameters[0].value === ''
-					) {
+					if (parameters.length === 1 && parameters[0].name === '' && parameters[0].value === '') {
 						throw new NodeOperationError(
 							this.getNode(),
 							"At least one entry with 'Name' and 'Value' filled must be included in 'Parameters' to use 'Update a Parameter in Each Request' mode ",
@@ -1001,39 +1027,34 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 				requestPromises.push(requestPromise);
 			} else if (authentication === 'genericCredentialType' || authentication === 'none') {
 				if (oAuth1Api) {
-					const requestOAuth1 = this.helpers.requestOAuth1.call(
-						this,
-						'oAuth1Api',
-						requestOptions,
-					).catch(async (response) => {
-						if (response.statusCode === 402) {
-							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
-							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
-							requestOptions.headers!['x-payment'] = paymentHeader;
-							return this.helpers.request(requestOptions);
-						}
-						return;
-					});
+					const requestOAuth1 = this.helpers.requestOAuth1
+						.call(this, 'oAuth1Api', requestOptions)
+						.catch(async (response) => {
+							if (response.statusCode === 402) {
+								// Generate an x402 payment header
+								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
+								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+								requestOptions.headers!['x-payment'] = paymentHeader;
+								return this.helpers.request(requestOptions);
+							}
+							return;
+						});
 					requestPromises.push(requestOAuth1);
 				} else if (oAuth2Api) {
-					const requestOAuth2 = this.helpers.requestOAuth2.call(
-						this,
-						'oAuth2Api',
-						requestOptions,
-						{
+					const requestOAuth2 = this.helpers.requestOAuth2
+						.call(this, 'oAuth2Api', requestOptions, {
 							tokenType: 'Bearer',
-						},
-					).catch(async (response) => {
-						if (response.statusCode === 402) {
-							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
-							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
-							requestOptions.headers!['x-payment'] = paymentHeader;
-							return this.helpers.request(requestOptions);
-						}
-						return;
-					});
+						})
+						.catch(async (response) => {
+							if (response.statusCode === 402) {
+								// Generate an x402 payment header
+								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
+								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+								requestOptions.headers!['x-payment'] = paymentHeader;
+								return this.helpers.request(requestOptions);
+							}
+							return;
+						});
 					requestPromises.push(requestOAuth2);
 				} else {
 					// bearerAuth, queryAuth, headerAuth, digestAuth, none
@@ -1054,26 +1075,29 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 
 				// service-specific cred: OAuth1, OAuth2, plain
 
-				const requestWithAuthentication = this.helpers.requestWithAuthentication.call(
-					this,
-					nodeCredentialType,
-					requestOptions,
-					additionalOAuth2Options && { oauth2: additionalOAuth2Options },
-					itemIndex,
-				).then(async (response) => {
-					if (response.statusCode === 402) {
-						// Generate an x402 payment header
-						const paymentHeader = await generateX402PaymentHeader.call(this, response);
-						requestOptions.headers!['x-payment'] = paymentHeader;
-						return this.helpers.requestWithAuthentication.call(
-							this,
-							nodeCredentialType!,
-							requestOptions,
-							additionalOAuth2Options && { oauth2: additionalOAuth2Options },
-							itemIndex,);
-					}
-					return response;
-				});
+				const requestWithAuthentication = this.helpers.requestWithAuthentication
+					.call(
+						this,
+						nodeCredentialType,
+						requestOptions,
+						additionalOAuth2Options && { oauth2: additionalOAuth2Options },
+						itemIndex,
+					)
+					.then(async (response) => {
+						if (response.statusCode === 402) {
+							// Generate an x402 payment header
+							const paymentHeader = await generateX402PaymentHeader.call(this, response);
+							requestOptions.headers!['x-payment'] = paymentHeader;
+							return this.helpers.requestWithAuthentication.call(
+								this,
+								nodeCredentialType!,
+								requestOptions,
+								additionalOAuth2Options && { oauth2: additionalOAuth2Options },
+								itemIndex,
+							);
+						}
+						return response;
+					});
 				requestWithAuthentication.catch(() => {});
 				requestPromises.push(requestWithAuthentication);
 			}
@@ -1135,9 +1159,7 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 				}
 				if (!this.continueOnFail()) {
 					if (autoDetectResponseFormat && responseData.reason.error instanceof Buffer) {
-						responseData.reason.error = Buffer.from(
-							responseData.reason.error as Buffer,
-						).toString();
+						responseData.reason.error = Buffer.from(responseData.reason.error as Buffer).toString();
 					}
 
 					let error;
@@ -1427,7 +1449,10 @@ async function executeX402RequestOperation(this: IExecuteFunctions): Promise<INo
 	return [returnItems];
 }
 
-async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX402ErrorResponse): Promise<string> {
+async function generateX402PaymentHeader(
+	this: IExecuteFunctions,
+	response: IX402ErrorResponse,
+): Promise<string> {
 	// We are going to just use the first payment config for now.
 	const paymentConfig = response.accepts[0];
 
@@ -1439,27 +1464,33 @@ async function generateX402PaymentHeader(this: IExecuteFunctions, response: IX40
 		throw new NodeOperationError(this.getNode(), 'Only exact scheme is supported for now');
 	}
 
-  const {signature, data} = await getSignatureOperation(this, 0, paymentConfig.payTo, paymentConfig.asset, paymentConfig.maxAmountRequired);
+	const { signature, data } = await getSignatureOperation(
+		this,
+		0,
+		paymentConfig.payTo,
+		paymentConfig.asset,
+		paymentConfig.maxAmountRequired,
+	);
 
 	// Now we have to create the full x402 payment header
-  const authorization = JSON.parse(data) as IEIP3009Authorization;
+	const authorization = JSON.parse(data) as IEIP3009Authorization;
 
 	// 1Shot returns the validBefore/validAfter as an int, but we need to convert them to a string
 	authorization.validAfter = authorization.validAfter.toString();
 	authorization.validBefore = authorization.validBefore.toString();
 
 	const xPaymentObject = {
-    x402Version: 1,
-    scheme: "exact",
-    network: paymentConfig.network,
-    payload: {
-      authorization: authorization,
-      signature: signature,
-    },
-  };
+		x402Version: 1,
+		scheme: 'exact',
+		network: paymentConfig.network,
+		payload: {
+			authorization: authorization,
+			signature: signature,
+		},
+	};
 
-  const jsonString = JSON.stringify(xPaymentObject);
-  const base64Encoded = Buffer.from(jsonString, "utf-8").toString("base64");
+	const jsonString = JSON.stringify(xPaymentObject);
+	const base64Encoded = Buffer.from(jsonString, 'utf-8').toString('base64');
 
 	return base64Encoded;
 }

@@ -145,7 +145,7 @@ async function handleX402Webhook(
 	};
 
 	if (configuredTokens == null) {
-		configuredTokens = {paymentToken: []};
+		configuredTokens = { paymentToken: [] };
 	}
 
 	const { resourceDescription, mimeType } = options;
@@ -160,9 +160,12 @@ async function handleX402Webhook(
 		return { noWebhookResponse: true };
 	}
 
-	const shouldRegisterWithX402Scan = nodeStaticData.x402ScanRegistered != webhookUrl &&
-	!x402ScanRegistrationInProcess &&
-	(httpMethod === 'POST' || httpMethod === 'GET'); // Only register for POST and GET methods, X402 scan does not support other verbs
+	const shouldRegisterWithX402Scan =
+		(nodeStaticData.x402ScanRegistered != webhookUrl ||
+			nodeStaticData.resourceDescription != resourceDescription ||
+			nodeStaticData.mimeType != mimeType) &&
+		!x402ScanRegistrationInProcess &&
+		(httpMethod === 'POST' || httpMethod === 'GET'); // Only register for POST and GET methods, X402 scan does not support other verbs
 
 	// We'll register the webhook with x402Scan if it's not already registered.
 	if (shouldRegisterWithX402Scan) {
@@ -170,6 +173,8 @@ async function handleX402Webhook(
 			x402ScanRegistrationInProcess = true;
 			await registerWebhookWithX402Scan(this, webhookUrl);
 			nodeStaticData.x402ScanRegistered = webhookUrl;
+			nodeStaticData.resourceDescription = resourceDescription;
+			nodeStaticData.mimeType = mimeType;
 			x402ScanRegistrationInProcess = false;
 			this.logger.info('Successfully registered workflow on x402Scan');
 		} catch (err) {

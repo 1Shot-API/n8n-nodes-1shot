@@ -1,4 +1,4 @@
-import { IDataObject } from "n8n-workflow";
+import { IDataObject } from 'n8n-workflow';
 
 /**
  * These are methods copied from https://github.com/n8n-io/n8n/blob/master/packages/workflow/src/utils.ts that

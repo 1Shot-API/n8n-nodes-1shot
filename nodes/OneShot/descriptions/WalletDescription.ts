@@ -71,7 +71,7 @@ const walletFields: INodeProperties[] = [
 		required: true,
 		displayOptions: {
 			show: {
-				resource: ['wallets',],
+				resource: ['wallets'],
 				operation: ['get'],
 			},
 		},
