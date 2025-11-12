@@ -17,7 +17,8 @@ export const x402RequestProperties: INodeProperties[] = [
 			{
 				name: 'X402 HTTP Request',
 				value: 'x402',
-				description: 'Make an HTTP request to an x402-enabled API endpoint. Any fee will be paid using a 1Shot Wallet.',
+				description:
+					'Make an HTTP request to an x402-enabled API endpoint. Any fee will be paid using a 1Shot Wallet.',
 				action: 'HTTP Request',
 			},
 		],
@@ -921,9 +922,7 @@ export const x402RequestProperties: INodeProperties[] = [
 						],
 					},
 				],
-				displayOptions: {
-
-				},
+				displayOptions: {},
 			},
 			{
 				displayName: 'Response',
