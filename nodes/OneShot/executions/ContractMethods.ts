@@ -86,11 +86,13 @@ export async function executeContractMethodOperation(context: IExecuteFunctions,
 		authorizationList?: string;
 		value?: string;
 		gasLimit?: string;
+		contractAddress?: string;
 	};
 	const memo = additionalFields.memo;
 	const walletId = additionalFields.walletId;
 	const value = additionalFields.value;
 	const gasLimit = additionalFields.gasLimit;
+	const contractAddress = additionalFields.contractAddress;
 	// const authorizationList = this.getNodeParameter('authorizationList', i) as string;
 	// const parsedAuthorizationList = authorizationList != "" ? JSON.parse(authorizationList) : undefined;
 
@@ -103,6 +105,7 @@ export async function executeContractMethodOperation(context: IExecuteFunctions,
 		undefined,
 		value,
 		gasLimit,
+		contractAddress
 	);
 }
 
@@ -120,11 +123,13 @@ export async function executeAsDelegatorContractMethodOperation(
 		walletId?: string;
 		value?: string;
 		gasLimit?: string;
+		contractAddress?: string;
 	};
 	const memo = additionalFields.memo;
 	const walletId = additionalFields.walletId;
 	const value = additionalFields.value;
 	const gasLimit = additionalFields.gasLimit;
+	const contractAddress = additionalFields.contractAddress;
 	// const authorizationList = this.getNodeParameter('authorizationList', i) as string;
 	// const parsedAuthorizationList = authorizationList != "" ? JSON.parse(authorizationList) : undefined;
 
@@ -137,6 +142,7 @@ export async function executeAsDelegatorContractMethodOperation(
 		memo,
 		value,
 		gasLimit,
+		contractAddress
 	);
 }
 
@@ -852,6 +858,7 @@ export async function executeContractMethod(
 	authorizationList?: ERC7702Authorization[],
 	value?: string,
 	gasLimit?: string,
+	contractAddress?: string,
 ): Promise<Transaction> {
 	try {
 		const response: Transaction = await context.helpers.requestWithAuthentication.call(
@@ -867,6 +874,7 @@ export async function executeContractMethod(
 					authorizationList,
 					value,
 					gasLimit,
+					contractAddress
 				},
 				headers: {
 					Accept: 'application/json',
@@ -894,6 +902,7 @@ export async function executeContractMethodAsDelegator(
 	memo?: string,
 	value?: string,
 	gasLimit?: string,
+	contractAddress?: string,
 ): Promise<Transaction> {
 	try {
 		const response: Transaction = await context.helpers.requestWithAuthentication.call(
@@ -909,6 +918,7 @@ export async function executeContractMethodAsDelegator(
 					memo,
 					value,
 					gasLimit,
+					contractAddress
 				},
 				headers: {
 					Accept: 'application/json',
