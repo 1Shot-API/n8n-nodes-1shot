@@ -176,11 +176,11 @@ const contractMethodFields: INodeProperties[] = [
 						default: {},
 						options: [
 							{
-								displayName: 'Contract Address',
+								displayName: 'Contract Address Override',
 								name: 'contractAddress',
 								type: 'string',
 								default: '',
-								description: 'The contract address for this method execution',
+								description: 'Set this to override the default contract address for this method execution',
 							},
 							{
 								displayName: 'Value',
@@ -254,11 +254,11 @@ const contractMethodFields: INodeProperties[] = [
 						default: {},
 						options: [
 							{
-								displayName: 'Contract Address',
+								displayName: 'Contract Address Override',
 								name: 'contractAddress',
 								type: 'string',
 								default: '',
-								description: 'The contract address for this method execution',
+								description: 'Set this to override the default contract address for this method execution',
 							},
 							{
 								displayName: 'Value',
@@ -484,6 +484,7 @@ const contractMethodFields: INodeProperties[] = [
 				operation: ['execute', 'executeAsDelegator'],
 			},
 		},
+		// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
 		options: [
 			{
 				displayName: 'Wallet ID',
@@ -499,6 +500,13 @@ const contractMethodFields: INodeProperties[] = [
 				default: '',
 				description:
 					'Optional text to include with the Transaction after the Contract Method is executed',
+			},
+			{
+				displayName: 'Contract Address Override',
+				name: 'contractAddress',
+				type: 'string',
+				default: '',
+				description: 'Set this to override the default contract address for this method execution',
 			},
 			{
 				displayName: 'Authorization List',

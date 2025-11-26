@@ -174,11 +174,11 @@ export class OneShotSynch implements INodeType {
 								default: {},
 								options: [
 									{
-										displayName: 'Contract Address',
+										displayName: 'Contract Address Override',
 										name: 'contractAddress',
 										type: 'string',
 										default: '',
-										description: 'The contract address for this method execution',
+										description: 'Set this to override the default contract address for this method execution',
 									},
 									{
 										displayName: 'Value',
@@ -252,11 +252,11 @@ export class OneShotSynch implements INodeType {
 								default: {},
 								options: [
 									{
-										displayName: 'Contract Address',
+										displayName: 'Contract Address Override',
 										name: 'contractAddress',
 										type: 'string',
 										default: '',
-										description: 'The contract address for this method execution',
+										description: 'Set this to override the default contract address for this method execution',
 									},
 									{
 										displayName: 'Value',
@@ -300,6 +300,7 @@ export class OneShotSynch implements INodeType {
 						operation: ['execute', 'executeAsDelegator'],
 					},
 				},
+				// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
 				options: [
 					{
 						displayName: 'Wallet ID',
@@ -315,6 +316,20 @@ export class OneShotSynch implements INodeType {
 						default: '',
 						description:
 							'Optional text to include with the Transaction after the Contract Method is executed',
+					},
+					{
+						displayName: 'Contract Address Override',
+						name: 'contractAddress',
+						type: 'string',
+						default: '',
+						description: 'Set this to override the default contract address for this method execution',
+					},
+					{
+						displayName: 'Authorization List',
+						name: 'authorizationList',
+						type: 'json',
+						default: '[]',
+						description: 'List of ERC-7702 authorizations for the Contract Method',
 					},
 					{
 						displayName: 'Gas Limit',
