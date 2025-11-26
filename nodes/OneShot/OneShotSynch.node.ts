@@ -62,7 +62,7 @@ export class OneShotSynch implements INodeType {
 						name: 'Execute as Delegator',
 						value: 'executeAsDelegator',
 						description:
-							'Execute a contract method on the blockchain using a stored ERC-7702 delgation',
+							'Execute a contract method on the blockchain using a stored ERC-7702 delegation',
 						action: 'Execute a contract method as delegator',
 					},
 					{
