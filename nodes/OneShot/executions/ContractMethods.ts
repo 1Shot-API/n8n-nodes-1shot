@@ -109,7 +109,7 @@ export async function executeContractMethodOperation(context: IExecuteFunctions,
 		authorizationList,
 		value,
 		gasLimit,
-		contractAddress
+		contractAddress,
 	);
 }
 
@@ -119,7 +119,11 @@ export async function executeAsDelegatorContractMethodOperation(
 ) {
 	const contractMethodId = context.getNodeParameter('contractMethodId', index) as string;
 	const paramsString = context.getNodeParameter('params', index) as string;
-	const delegatorAddress = context.getNodeParameter('delegatorWalletAddress', index) as string;
+	const delegatorAddress = context.getNodeParameter('delegatorWalletAddress', index) as
+		| string
+		| undefined;
+	const delegationId = context.getNodeParameter('delegationId', index) as string | undefined;
+	const delegationData = context.getNodeParameter('delegationData', index) as string | undefined;
 	const parsedParams = JSON.parse(paramsString);
 
 	const additionalFields = context.getNodeParameter('additionalFields', index) as {
@@ -147,12 +151,14 @@ export async function executeAsDelegatorContractMethodOperation(
 		contractMethodId,
 		parsedParams,
 		delegatorAddress,
+		delegationId,
+		delegationData,
 		walletId,
 		memo,
 		authorizationList,
 		value,
 		gasLimit,
-		contractAddress
+		contractAddress,
 	);
 }
 
@@ -194,7 +200,7 @@ export async function executeAndWaitContractMethodOperation(
 		authorizationList,
 		value,
 		gasLimit,
-		contractAddress
+		contractAddress,
 	);
 
 	// Wait for transaction to complete
@@ -220,7 +226,9 @@ export async function executeAsDelegatorAndWaitContractMethodOperation(
 ): Promise<{ success: boolean; result: Transaction }> {
 	const contractMethodId = context.getNodeParameter('contractMethodId', index) as string;
 	const paramsString = context.getNodeParameter('params', index) as string;
-	const delegatorAddress = context.getNodeParameter('delegatorWalletAddress', index) as string;
+	const delegatorAddress = context.getNodeParameter('delegatorWalletAddress', index) as
+		| string
+		| undefined;
 	const parsedParams = JSON.parse(paramsString);
 
 	const additionalFields = context.getNodeParameter('additionalFields', index) as {
@@ -230,13 +238,16 @@ export async function executeAsDelegatorAndWaitContractMethodOperation(
 		value?: string;
 		gasLimit?: string;
 		contractAddress?: string;
-
+		delegationId?: string;
+		delegationData?: string;
 	};
 	const memo = additionalFields.memo;
 	const walletId = additionalFields.walletId;
 	const value = additionalFields.value;
 	const gasLimit = additionalFields.gasLimit;
 	const contractAddress = additionalFields.contractAddress;
+	const delegationId = additionalFields.delegationId;
+	const delegationData = additionalFields.delegationData;
 
 	// Parse authorization list if provided
 	let authorizationList;
@@ -249,12 +260,14 @@ export async function executeAsDelegatorAndWaitContractMethodOperation(
 		contractMethodId,
 		parsedParams,
 		delegatorAddress,
+		delegationId,
+		delegationData,
 		walletId,
 		memo,
 		authorizationList,
 		value,
 		gasLimit,
-		contractAddress
+		contractAddress,
 	);
 
 	// Wait for transaction to complete
@@ -360,6 +373,8 @@ export async function executeAsDelegatorBatchOperation(context: IExecuteFunction
 				executionIndex: methodIndex,
 				params: parsedParams,
 				delegatorAddress: method.delegatorAddress,
+				delegationId: method.delegationId,
+				delegationData: method.delegationData,
 				contractAddress: optionalFields.contractAddress || undefined,
 				value: optionalFields.value || undefined,
 			};
@@ -905,7 +920,7 @@ export async function executeContractMethod(
 					authorizationList,
 					value,
 					gasLimit,
-					contractAddress
+					contractAddress,
 				},
 				headers: {
 					Accept: 'application/json',
@@ -928,7 +943,9 @@ export async function executeContractMethodAsDelegator(
 	context: IExecuteFunctions,
 	contractMethodId: string,
 	params: JSONValue,
-	delegatorAddress: string,
+	delegatorAddress?: string,
+	delegationId?: string,
+	delegationData?: string,
 	walletId?: string,
 	memo?: string,
 	authorizationList?: ERC7702Authorization[],
@@ -937,22 +954,33 @@ export async function executeContractMethodAsDelegator(
 	contractAddress?: string,
 ): Promise<Transaction> {
 	try {
+		// Build the body with only one delegation option
+		const body: any = {
+			params,
+			walletId,
+			memo,
+			authorizationList,
+			value,
+			gasLimit,
+			contractAddress,
+		};
+
+		// Add only one delegation option (priority: delegationId > delegationData > delegatorAddress)
+		if (delegationId) {
+			body.delegationId = delegationId;
+		} else if (delegationData) {
+			body.delegationData = delegationData;
+		} else if (delegatorAddress) {
+			body.delegatorAddress = delegatorAddress;
+		}
+
 		const response: Transaction = await context.helpers.requestWithAuthentication.call(
 			context,
 			'oneShotOAuth2Api',
 			{
 				method: 'POST',
 				url: `/methods/${contractMethodId}/executeAsDelegator`,
-				body: {
-					params,
-					delegatorAddress,
-					walletId,
-					memo,
-					authorizationList,
-					value,
-					gasLimit,
-					contractAddress
-				},
+				body,
 				headers: {
 					Accept: 'application/json',
 					'Content-Type': 'application/json',
@@ -1086,7 +1114,9 @@ export async function executeAsDelegatorBatch(
 		contractMethodId: string;
 		executionIndex: number;
 		params: JSONValue;
-		delegatorAddress: string;
+		delegatorAddress?: string;
+		delegationId?: string;
+		delegationData?: string;
 		value?: string;
 		contractAddress?: string;
 	}>,
