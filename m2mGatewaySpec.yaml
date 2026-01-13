@@ -368,7 +368,14 @@ paths:
                   description: You may include any text you like when you execute a Contract Method, as a note to yourself about why it was done. This text can be JSON or similar if you want to store formatted data.
                 delegatorAddress:
                   $ref: "#/components/schemas/AccountAddress"
-                  description: The address of the delegator on whose behalf the transaction will be executed.
+                  description: The address of the delegator on whose behalf the transaction will be executed. This delegation must be on file already; 1Shot API will use the first matching delegation for the delegator address but is not guaranteed to use the best or correct one if multiple delegations exist.
+                delegationId:
+                  $ref: "#/components/schemas/DelegationId"
+                  description: The ID of a specific delegation to use for this transaction. This is the best way to ensure that 1Shot API uses the correct delegation for the transaction.
+                delegationData:
+                  type: object
+                  $ref: "#/components/schemas/DelegationData"
+                  description: A delegation object to use for the transaction. This is treated as a one-time use delegation and not stored in 1Shot API for reuse. Not usable with delgatorAddress or delegationId.
                 authorizationList:
                   type: array
                   items:
@@ -385,8 +392,6 @@ paths:
                   format: big-number-string
                   description: The gas limit for the transaction. The transaction will revert if it uses more gas than this, and you will spend the gas in the process. Ordinarily, you do not need this, 1Shot will calculate it for you. However, for some very complicated transactions, you may need to set the gas limit manually as the normal estimation process may underestimate the gas amount.
                   example: "123400000000000000000"
-              required:
-                - delegatorAddress
       responses:
         200:
           description: "Success"
@@ -498,7 +503,14 @@ paths:
                         $ref: '#/components/schemas/JSONValue'
                       delegatorAddress:
                         $ref: "#/components/schemas/AccountAddress"
-                        description: The address of the delegator on whose behalf the transaction will be executed.
+                        description: The address of the delegator on whose behalf the transaction will be executed. This delegation must be on file already; 1Shot API will use the first matching delegation for the delegator address but is not guaranteed to use the best or correct one if multiple delegations exist.
+                      delegationId:
+                        $ref: "#/components/schemas/DelegationId"
+                        description: The ID of a specific delegation to use for this transaction. This is the best way to ensure that 1Shot API uses the correct delegation for the transaction.
+                      delegationData:
+                        type: object
+                        $ref: "#/components/schemas/DelegationData"
+                        description: A delegation object to use for the transaction. This is treated as a one-time use delegation and not stored in 1Shot API for reuse. Not usable with delgatorAddress or delegationId.
                       value:
                         type: string
                         format: big-number-string
@@ -3076,6 +3088,12 @@ components:
       description: Internal ID of the Contract Method object. Contract Methods are sometimes referred to as Endpoints. A Contract Method is a single method on a smart contract.
       example: 4b4bab2d-673d-4b91-8e09-f1402962cd3e
 
+    DelegationId:
+      type: string
+      format: uuid
+      description: Internal ID of a Delegation object.
+      example: 4b4bab2d-673d-4b91-8e09-f1402962cd3e
+
     TransactionId:
       type: string
       format: uuid
@@ -3310,10 +3328,7 @@ components:
               description: Array of method names that the wallet can execute. If empty, all methods are allowed.
               example: ["mint", "transfer"]
             delegationData:
-              type: string
-              format: json-string
-              description: The actual Delegation object serialized as a JSON string. BigInts must be encoded as strings.
-              example: {"authority":"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","caveats":[],"delegate":"0x74847c451c3745fcdf4fd447a9fa5eef8a6791a9","delegator":"0x3e6a2f0CBA03d293B54c9fCF354948903007a798","salt":"0x","signature":"0x000007dc509f5f440bd07e2a51cb8dd135f170bc8886ccf24c35652d256d4f06501537e663fbb3b6e51ca640ad4791fb605ba7434d4d8a0a0a24bfd4d841e88f1c"}
+              $ref: "#/components/schemas/DelegationData"
           required:
             - id
             - businessId
@@ -3324,6 +3339,12 @@ components:
             - methods
             - delegationData
         - $ref: "#/components/schemas/EntityBookKeepingWithoutDeleted"
+
+    DelegationData:
+      type: string
+      format: json-string
+      description: The actual Delegation object serialized as a JSON string. BigInts must be encoded as strings.
+      example: {"authority":"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","caveats":[],"delegate":"0x74847c451c3745fcdf4fd447a9fa5eef8a6791a9","delegator":"0x3e6a2f0CBA03d293B54c9fCF354948903007a798","salt":"0x","signature":"0x000007dc509f5f440bd07e2a51cb8dd135f170bc8886ccf24c35652d256d4f06501537e663fbb3b6e51ca640ad4791fb605ba7434d4d8a0a0a24bfd4d841e88f1c"}
 
     ChainInfo:
       description: Information about a chain supported by 1Shot API

@@ -312,6 +312,11 @@ export const x402RequestProperties: INodeProperties[] = [
 		displayName: 'Send Headers',
 		name: 'sendHeaders',
 		type: 'boolean',
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 		default: false,
 		noDataExpression: true,
 		description: 'Whether the request has headers or not',
@@ -747,6 +752,11 @@ export const x402RequestProperties: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add option',
 		default: {},
+		displayOptions: {
+			show: {
+				resource: ['x402Request'],
+			},
+		},
 		// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
 		options: [
 			{

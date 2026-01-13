@@ -180,7 +180,8 @@ const contractMethodFields: INodeProperties[] = [
 								name: 'contractAddress',
 								type: 'string',
 								default: '',
-								description: 'Set this to override the default contract address for this method execution',
+								description:
+									'Set this to override the default contract address for this method execution',
 							},
 							{
 								displayName: 'Value',
@@ -241,10 +242,25 @@ const contractMethodFields: INodeProperties[] = [
 						displayName: 'Delegator Address',
 						name: 'delegatorAddress',
 						type: 'string',
-						required: true,
 						default: '',
 						description:
-							'The address of the delegator on whose behalf the transaction will be executed',
+							'The address of the delegator on whose behalf the transaction will be executed. Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
+					},
+					{
+						displayName: 'Delegation ID',
+						name: 'delegationId',
+						type: 'string',
+						default: '',
+						description:
+							'The ID of a specific delegation to use for this transaction. This is the best way to ensure that 1Shot API uses the correct delegation. Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
+					},
+					{
+						displayName: 'Delegation Data',
+						name: 'delegationData',
+						type: 'json',
+						default: '',
+						description:
+							'A delegation object to use for the transaction. This is treated as a one-time use delegation and not stored in 1Shot API for reuse. Enter a JSON object (e.g., {"authority":"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","caveats":[],"delegate":"0x74847c451c3745fcdf4fd447a9fa5eef8a6791a9","delegator":"0x3e6a2f0CBA03d293B54c9fCF354948903007a798","salt":"0x","signature":"0x000007dc509f5f440bd07e2a51cb8dd135f170bc8886ccf24c35652d256d4f06501537e663fbb3b6e51ca640ad4791fb605ba7434d4d8a0a0a24bfd4d841e88f1c"}). Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
 					},
 					{
 						displayName: 'Optional Fields',
@@ -258,7 +274,8 @@ const contractMethodFields: INodeProperties[] = [
 								name: 'contractAddress',
 								type: 'string',
 								default: '',
-								description: 'Set this to override the default contract address for this method execution',
+								description:
+									'Set this to override the default contract address for this method execution',
 							},
 							{
 								displayName: 'Value',
@@ -289,10 +306,21 @@ const contractMethodFields: INodeProperties[] = [
 			'The parameters to pass to the Contract Method. Enter a JSON object (e.g., {"to": "0x3e6a2f0CBA03d293B54c9fCF354948903007a798", "amount": "10000"}).',
 	},
 	{
+		displayName: 'You must use one of either delegatorAddress, delegationId, or delegationData.',
+		name: 'delegationInfoMessage',
+		type: 'notice',
+		default: '',
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['executeAsDelegator'],
+			},
+		},
+	},
+	{
 		displayName: 'Delegator Wallet Address',
 		name: 'delegatorWalletAddress',
 		type: 'string',
-		required: true,
 		displayOptions: {
 			show: {
 				resource: ['contractMethods'],
@@ -300,7 +328,36 @@ const contractMethodFields: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'The address of the delegator wallet to use for the contract method',
+		description:
+			'The address of the delegator wallet to use for the contract method. Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
+	},
+	{
+		displayName: 'Delegation ID',
+		name: 'delegationId',
+		type: 'string',
+		default: '',
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['executeAsDelegator'],
+			},
+		},
+		description:
+			'The ID of a specific delegation to use for this transaction. This is the best way to ensure that 1Shot API uses the correct delegation. Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
+	},
+	{
+		displayName: 'Delegation Data',
+		name: 'delegationData',
+		type: 'json',
+		default: '',
+		displayOptions: {
+			show: {
+				resource: ['contractMethods'],
+				operation: ['executeAsDelegator'],
+			},
+		},
+		description:
+			'A delegation object to use for the transaction. This is treated as a one-time use delegation and not stored in 1Shot API for reuse. Enter a JSON object (e.g., {"authority":"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","caveats":[],"delegate":"0x74847c451c3745fcdf4fd447a9fa5eef8a6791a9","delegator":"0x3e6a2f0CBA03d293B54c9fCF354948903007a798","salt":"0x","signature":"0x000007dc509f5f440bd07e2a51cb8dd135f170bc8886ccf24c35652d256d4f06501537e663fbb3b6e51ca640ad4791fb605ba7434d4d8a0a0a24bfd4d841e88f1c"}). Note: You can only use one of delegatorAddress, delegationId, or delegationData.',
 	},
 	{
 		displayName: 'Name',
@@ -507,6 +564,13 @@ const contractMethodFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Set this to override the default contract address for this method execution',
+			},
+			{
+				displayName: 'Value',
+				name: 'value',
+				type: 'string',
+				default: '',
+				description: 'The amount of native token to send along with the Contract Method',
 			},
 			{
 				displayName: 'Authorization List',
