@@ -306,8 +306,7 @@ const contractMethodFields: INodeProperties[] = [
 			'The parameters to pass to the Contract Method. Enter a JSON object (e.g., {"to": "0x3e6a2f0CBA03d293B54c9fCF354948903007a798", "amount": "10000"}).',
 	},
 	{
-		displayName:
-			'You must use one of either delegatorAddress, delegationId, or delegationData.',
+		displayName: 'You must use one of either delegatorAddress, delegationId, or delegationData.',
 		name: 'delegationInfoMessage',
 		type: 'notice',
 		default: '',
@@ -565,6 +564,13 @@ const contractMethodFields: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Set this to override the default contract address for this method execution',
+			},
+			{
+				displayName: 'Value',
+				name: 'value',
+				type: 'string',
+				default: '',
+				description: 'The amount of native token to send along with the Contract Method',
 			},
 			{
 				displayName: 'Authorization List',

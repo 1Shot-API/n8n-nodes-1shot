@@ -328,6 +328,13 @@ export class OneShotSynch implements INodeType {
 							'Set this to override the default contract address for this method execution',
 					},
 					{
+						displayName: 'Value',
+						name: 'value',
+						type: 'string',
+						default: '',
+						description: 'The amount of native token to send along with the Contract Method',
+					},
+					{
 						displayName: 'Authorization List',
 						name: 'authorizationList',
 						type: 'json',
