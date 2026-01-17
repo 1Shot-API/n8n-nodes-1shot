@@ -73,9 +73,22 @@ async function handleX402Webhook(
 		rawBody: boolean;
 		responseData?: string;
 		ipWhitelist?: string;
+		responseHeaders?: {
+			entries?: Array<{
+				name: string;
+				value: string;
+			}>;
+		};
 		resourceDescription: string;
 		mimeType: string;
+		x402RefundsContactEmail?: string;
 	};
+
+	this.logger.debug('x402 webhook options', {
+		responseMode,
+		responseHeaders: options.responseHeaders,
+		x402RefundsContactEmail: options.x402RefundsContactEmail ?? '',
+	});
 
 	const headers = this.getHeaderData();
 	const req = this.getRequestObject();

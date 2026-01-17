@@ -5,6 +5,10 @@ export type WebhookParameters = {
 	responseMode: string;
 	responseData: string;
 	responseCode?: number; //typeVersion <= 1.1
+	responseHeaders?: Array<{
+		name: string;
+		value: string;
+	}>;
 	options?: {
 		responseData?: string;
 		responseCode?: {
@@ -14,6 +18,13 @@ export type WebhookParameters = {
 			};
 		};
 		noResponseBody?: boolean;
+		responseHeaders?: {
+			entries?: Array<{
+				name: string;
+				value: string;
+			}>;
+		};
+		x402RefundsContactEmail?: string;
 	};
 };
 
@@ -46,6 +57,58 @@ export const getResponseData = (parameters: WebhookParameters) => {
 	if (options?.noResponseBody) return 'noData';
 
 	return undefined;
+};
+
+export const getResponseHeaders = (parameters: WebhookParameters) => {
+	// This should never happen but we need to handle it.
+	if (parameters.options == null) {
+		return null;
+	}
+
+	// Get the response headers from the options.
+	let responseHeaders = parameters.options.responseHeaders;
+
+	try {
+		const x402RefundsContactEmail = parameters.options.x402RefundsContactEmail;
+
+		if (x402RefundsContactEmail == null) {
+			return responseHeaders;
+		}
+
+		// We need to add a link header to the response headers.
+		// Make sure we have the entries.
+		if (responseHeaders == null) {
+			responseHeaders = {
+				entries: [],
+			};
+		}
+
+		const entries = responseHeaders.entries!;
+
+		// Create the link header content.
+		const refundContact = `<mailto:${x402RefundsContactEmail}>; rel="https://x402refunds.com/rel/refund-contact"`;
+		const refundRequest =
+			'<https://api.x402refunds.com/v1/refunds>; rel="https://x402refunds.com/rel/refund-request"; type="application/json"';
+
+		const x402LinkHeader = `${refundContact}, ${refundRequest}`;
+
+		const existingLinkIndex = entries.findIndex((entry) => entry.name?.toLowerCase() === 'link');
+		if (existingLinkIndex >= 0) {
+			const existing = entries[existingLinkIndex];
+			existing.value = existing.value ? `${existing.value}, ${x402LinkHeader}` : x402LinkHeader;
+
+			return responseHeaders;
+		}
+
+		// No existing link header so we need to add it
+		entries.push({
+			name: 'Link',
+			value: x402LinkHeader,
+		});
+		return responseHeaders;
+	} catch (e) {
+		return responseHeaders;
+	}
 };
 
 export const configuredOutputs = (parameters: WebhookParameters) => {
