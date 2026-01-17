@@ -1,6 +1,6 @@
 import type { INodeProperties, IWebhookDescription } from 'n8n-workflow';
 
-import { getResponseCode, getResponseData } from '../utils/webhookUtils';
+import { getResponseCode, getResponseData, getResponseHeaders } from '../utils/webhookUtils';
 
 export const defaultWebhookDescription: IWebhookDescription = {
 	name: 'default',
@@ -12,7 +12,7 @@ export const defaultWebhookDescription: IWebhookDescription = {
 	responseBinaryPropertyName: '={{$parameter["responseBinaryPropertyName"]}}',
 	responseContentType: '={{$parameter["options"]["responseContentType"]}}',
 	responsePropertyName: '={{$parameter["options"]["responsePropertyName"]}}',
-	responseHeaders: '={{$parameter["options"]["responseHeaders"]}}',
+	responseHeaders: `={{(${getResponseHeaders})($parameter)}}`,
 	path: '={{$parameter["path"]}}',
 };
 
@@ -360,6 +360,19 @@ export const webhookOptionsProperty: INodeProperties = {
 			},
 			default: 'data',
 			description: 'Name of the property to return the data of instead of the whole JSON',
+		},
+		{
+			// eslint-disable-next-line n8n-nodes-base/node-param-display-name-miscased
+			displayName: 'x402 Refunds Contact Email',
+			name: 'x402RefundsContactEmail',
+			type: 'string',
+			displayOptions: {
+				show: {
+					'/webhookType': ['x402'],
+				},
+			},
+			default: '',
+			description: 'Enter the email address to notify to adjudicate refunds using x402Refund.com',
 		},
 	],
 };
