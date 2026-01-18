@@ -1,4 +1,3 @@
-import FormData from 'form-data';
 import {
 	deepCopy,
 	type ICredentialDataDecryptedObject,
@@ -259,18 +258,24 @@ export const prepareRequestBody = async (
 			return result;
 		}, Promise.resolve({}));
 	} else if (bodyType === 'multipart-form-data' && version >= 4.2) {
-		const formData = new FormData();
+		const formData: IDataObject = {};
 
 		for (const parameter of parameters) {
 			if (parameter.parameterType === 'formBinaryData') {
 				const entry = await defaultReducer({}, parameter);
 				const key = Object.keys(entry)[0];
-				const data = entry[key] as { value: Buffer; options: FormData.AppendOptions };
-				formData.append(key, data.value, data.options);
+				const data = entry[key] as {
+					value: Buffer;
+					options?: {
+						filename?: string;
+						contentType?: string;
+					};
+				};
+				formData[key] = data;
 				continue;
 			}
 
-			formData.append(parameter.name, parameter.value);
+			formData[parameter.name] = parameter.value;
 		}
 
 		return formData;

@@ -1,4 +1,5 @@
 // Copied from https://github.com/paulmillr/noble-ed25519
+import { webcrypto } from 'crypto';
 
 /*! noble-ed25519 - MIT License (c) 2019 Paul Miller (paulmillr.com) */
 /**
@@ -483,8 +484,7 @@ const verifyAsync = async (s: Hex, m: Hex, p: Hex, opts: VerifOpts = dvo): Promi
 /** Verifies signature on message and public key. To use, set `etc.sha512Sync` first. */
 const verify = (s: Hex, m: Hex, p: Hex, opts: VerifOpts = dvo): boolean =>
 	hashFinishS(_verify(s, m, p, opts));
-declare const globalThis: Record<string, any> | undefined; // Typescript symbol present in browsers
-const cr = () => globalThis?.crypto;
+const cr = () => webcrypto;
 const subtle = () => cr()?.subtle ?? err('crypto.subtle must be defined');
 const rand = (len = 32): Bytes => {
 	// CSPRNG (random number generator)
@@ -497,7 +497,7 @@ const etc = {
 	sha512Async: async (...messages: Bytes[]): Promise<Bytes> => {
 		const s = subtle();
 		const m = concatBytes(...messages);
-		return u8n(await s.digest('SHA-512', m.buffer));
+		return new Uint8Array(await s.digest('SHA-512', m));
 	},
 	sha512Sync: undefined as Sha512FnSync, // Actual logic below
 
