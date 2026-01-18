@@ -10,6 +10,7 @@ import {
 	IRequestOptions,
 	ICredentialDataDecryptedObject,
 	IHttpRequestMethods,
+	IHttpRequestOptions,
 	sleep,
 	BINARY_ENCODING,
 	jsonParse,
@@ -1026,24 +1027,29 @@ async function executeX402RequestOperation(
 					});
 				requestPromises.push(requestPromise);
 			} else if (authentication === 'genericCredentialType' || authentication === 'none') {
+				const httpRequestOptions = requestOptions as IHttpRequestOptions;
 				if (oAuth1Api) {
-					const requestOAuth1 = this.helpers.requestOAuth1
-						.call(this, 'oAuth1Api', requestOptions)
+					const requestOAuth1 = this.helpers.httpRequestWithAuthentication
+						.call(this, 'oAuth1Api', httpRequestOptions)
 						.catch(async (response) => {
 							if (response.statusCode === 402) {
 								// Generate an x402 payment header
 								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 								requestOptions.headers!['x-payment'] = paymentHeader;
-								return this.helpers.request(requestOptions);
+								return this.helpers.httpRequestWithAuthentication.call(
+									this,
+									'oAuth1Api',
+									httpRequestOptions,
+								);
 							}
 							return;
 						});
 					requestPromises.push(requestOAuth1);
 				} else if (oAuth2Api) {
-					const requestOAuth2 = this.helpers.requestOAuth2
-						.call(this, 'oAuth2Api', requestOptions, {
-							tokenType: 'Bearer',
+					const requestOAuth2 = this.helpers.httpRequestWithAuthentication
+						.call(this, 'oAuth2Api', httpRequestOptions, {
+							oauth2: { tokenType: 'Bearer' },
 						})
 						.catch(async (response) => {
 							if (response.statusCode === 402) {
@@ -1051,20 +1057,27 @@ async function executeX402RequestOperation(
 								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 								requestOptions.headers!['x-payment'] = paymentHeader;
-								return this.helpers.request(requestOptions);
+								return this.helpers.httpRequestWithAuthentication.call(
+									this,
+									'oAuth2Api',
+									httpRequestOptions,
+									{
+										oauth2: { tokenType: 'Bearer' },
+									},
+								);
 							}
 							return;
 						});
 					requestPromises.push(requestOAuth2);
 				} else {
 					// bearerAuth, queryAuth, headerAuth, digestAuth, none
-					const request = this.helpers.request(requestOptions).catch(async (response) => {
+					const request = this.helpers.httpRequest(httpRequestOptions).catch(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
 							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
 							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
 							requestOptions.headers!['x-payment'] = paymentHeader;
-							return this.helpers.request(requestOptions);
+							return this.helpers.httpRequest(httpRequestOptions);
 						}
 						return;
 					});
@@ -1075,25 +1088,23 @@ async function executeX402RequestOperation(
 
 				// service-specific cred: OAuth1, OAuth2, plain
 
-				const requestWithAuthentication = this.helpers.requestWithAuthentication
+				const requestWithAuthentication = this.helpers.httpRequestWithAuthentication
 					.call(
 						this,
 						nodeCredentialType,
-						requestOptions,
+						requestOptions as IHttpRequestOptions,
 						additionalOAuth2Options && { oauth2: additionalOAuth2Options },
-						itemIndex,
 					)
 					.then(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
 							const paymentHeader = await generateX402PaymentHeader.call(this, response);
 							requestOptions.headers!['x-payment'] = paymentHeader;
-							return this.helpers.requestWithAuthentication.call(
+							return this.helpers.httpRequestWithAuthentication.call(
 								this,
 								nodeCredentialType!,
-								requestOptions,
+								requestOptions as IHttpRequestOptions,
 								additionalOAuth2Options && { oauth2: additionalOAuth2Options },
-								itemIndex,
 							);
 						}
 						return response;
