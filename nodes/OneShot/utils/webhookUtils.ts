@@ -69,11 +69,16 @@ export const getResponseHeaders = (parameters: WebhookParameters) => {
 	let responseHeaders = parameters.options.responseHeaders;
 
 	try {
-		const x402RefundsHeader = getX402RefundHeader(parameters.options.x402RefundsContactEmail);
+		const x402RefundsContactEmail = parameters.options.x402RefundsContactEmail;
 
-		if (x402RefundsHeader == null) {
-			return responseHeaders;
+		if (x402RefundsContactEmail == null || x402RefundsContactEmail === '') {
+			return null;
 		}
+		const refundContact = `<mailto:${x402RefundsContactEmail}>; rel="https://x402refunds.com/rel/refund-contact"`;
+		const refundRequest =
+			'<https://api.x402refunds.com/v1/refunds>; rel="https://x402refunds.com/rel/refund-request"; type="application/json"';
+
+		const x402RefundsHeader = `${refundContact}, ${refundRequest}`;
 
 		// We need to add a link header to the response headers.
 		// Make sure we have the entries.
