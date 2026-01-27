@@ -15,7 +15,6 @@ import {
 	BINARY_ENCODING,
 	jsonParse,
 	IRequestOptionsSimplified,
-	PaginationOptions,
 	NodeApiError,
 	JsonObject,
 	removeCircularRefs,
@@ -410,8 +409,8 @@ async function executeX402RequestOperation(
 	let nodeCredentialType: string | undefined;
 	let genericCredentialType: string | undefined;
 
-	let requestOptions: IRequestOptions = {
-		uri: '',
+	let requestOptions: IHttpRequestOptions = {
+		url: '',
 	};
 
 	let returnItems: INodeExecutionData[] = [];
@@ -423,27 +422,6 @@ async function executeX402RequestOperation(
 	let autoDetectResponseFormat = false;
 
 	let responseFileName: string | undefined;
-
-	// Can not be defined on a per item level
-	const pagination = this.getNodeParameter('options.pagination.pagination', 0, null, {
-		rawExpressions: true,
-	}) as {
-		paginationMode: 'off' | 'updateAParameterInEachRequest' | 'responseContainsNextURL';
-		nextURL?: string;
-		parameters: {
-			parameters: Array<{
-				type: 'body' | 'headers' | 'qs';
-				name: string;
-				value: string;
-			}>;
-		};
-		paginationCompleteWhen: 'responseIsEmpty' | 'receiveSpecificStatusCodes' | 'other';
-		statusCodesWhenComplete: string;
-		completeExpression: string;
-		limitPagesFetched: boolean;
-		maxRequests: number;
-		requestInterval: number;
-	};
 
 	const requests: Array<{
 		options: IRequestOptions;
@@ -602,7 +580,6 @@ async function executeX402RequestOperation(
 			const {
 				redirect,
 				batching,
-				proxy,
 				timeout,
 				allowUnauthorizedCerts,
 				queryParameterArrays,
@@ -610,7 +587,6 @@ async function executeX402RequestOperation(
 				lowercaseHeaders,
 			} = this.getNodeParameter('options', itemIndex, {}) as {
 				batching: { batch: { batchSize: number; batchInterval: number } };
-				proxy: string;
 				timeout: number;
 				allowUnauthorizedCerts: boolean;
 				queryParameterArrays: 'indices' | 'brackets' | 'repeat';
@@ -647,34 +623,25 @@ async function executeX402RequestOperation(
 			requestOptions = {
 				headers: {},
 				method: requestMethod,
-				uri: url,
-				gzip: true,
-				rejectUnauthorized: !allowUnauthorizedCerts || false,
-				followRedirect: false,
-				resolveWithFullResponse: true,
+				url: url,
+				skipSslCertificateValidation: allowUnauthorizedCerts || false,
+				disableFollowRedirect: true,
+				returnFullResponse: true,
+				ignoreHttpStatusErrors: false,
 			};
 
 			if (requestOptions.method !== 'GET' && nodeVersion >= 4.1) {
-				requestOptions = { ...requestOptions, followAllRedirects: false };
+				requestOptions = { ...requestOptions, disableFollowRedirect: true };
 			}
 
 			const defaultRedirect = nodeVersion >= 4 && redirect === undefined;
 
 			if (redirect?.redirect?.followRedirects || defaultRedirect) {
-				requestOptions.followRedirect = true;
-				requestOptions.followAllRedirects = true;
-			}
-
-			if (redirect?.redirect?.maxRedirects || defaultRedirect) {
-				requestOptions.maxRedirects = redirect?.redirect?.maxRedirects;
+				requestOptions.disableFollowRedirect = false;
 			}
 
 			if (response?.response?.neverError) {
-				requestOptions.simple = false;
-			}
-
-			if (proxy) {
-				requestOptions.proxy = proxy;
+				requestOptions.ignoreHttpStatusErrors = true;
 			}
 
 			if (timeout) {
@@ -753,13 +720,7 @@ async function executeX402RequestOperation(
 
 			// Change the way data get send in case a different content-type than JSON got selected
 			if (sendBody && ['PATCH', 'POST', 'PUT', 'GET'].includes(requestMethod)) {
-				if (bodyContentType === 'multipart-form-data') {
-					requestOptions.formData = requestOptions.body as IDataObject;
-					delete requestOptions.body;
-				} else if (bodyContentType === 'form-urlencoded') {
-					requestOptions.form = requestOptions.body as IDataObject;
-					delete requestOptions.body;
-				} else if (bodyContentType === 'binaryData') {
+				if (bodyContentType === 'binaryData') {
 					const inputDataFieldName = this.getNodeParameter(
 						'inputDataFieldName',
 						itemIndex,
@@ -836,12 +797,10 @@ async function executeX402RequestOperation(
 			}
 
 			if (autoDetectResponseFormat || responseFormat === 'file') {
-				requestOptions.encoding = null;
+				requestOptions.encoding = undefined;
 				requestOptions.json = false;
-				requestOptions.useStream = true;
 			} else if (bodyContentType === 'raw') {
 				requestOptions.json = false;
-				requestOptions.useStream = true;
 			} else {
 				requestOptions.json = true;
 			}
@@ -859,15 +818,12 @@ async function executeX402RequestOperation(
 
 			// Add SSL certificates if any are set
 			setAgentOptions(requestOptions, sslCertificates);
-			if (requestOptions.agentOptions) {
-				authDataKeys.agentOptions = Object.keys(requestOptions.agentOptions);
-			}
 
 			// Add credentials if any are set
 			if (httpBasicAuth !== undefined) {
 				requestOptions.auth = {
-					user: httpBasicAuth.user as string,
-					pass: httpBasicAuth.password as string,
+					username: httpBasicAuth.user as string,
+					password: httpBasicAuth.password as string,
 				};
 				authDataKeys.auth = ['pass'];
 			}
@@ -890,8 +846,8 @@ async function executeX402RequestOperation(
 
 			if (httpDigestAuth !== undefined) {
 				requestOptions.auth = {
-					user: httpDigestAuth.user as string,
-					pass: httpDigestAuth.password as string,
+					username: httpDigestAuth.user as string,
+					password: httpDigestAuth.password as string,
 					sendImmediately: false,
 				};
 				authDataKeys.auth = ['pass'];
@@ -933,153 +889,78 @@ async function executeX402RequestOperation(
 				credentialType: nodeCredentialType,
 			});
 
-			if (pagination && pagination.paginationMode !== 'off') {
-				let continueExpression = '={{false}}';
-				if (pagination.paginationCompleteWhen === 'receiveSpecificStatusCodes') {
-					// Split out comma separated list of status codes into array
-					const statusCodesWhenCompleted = pagination.statusCodesWhenComplete
-						.split(',')
-						.map((item) => parseInt(item.trim()));
+			// Disable requestOptions.ignoreHttpStatusErrors but store it
+			const ignoreHttpStatusErrors = requestOptions.ignoreHttpStatusErrors;
+			requestOptions.ignoreHttpStatusErrors = true;
 
-					continueExpression = `={{ !${JSON.stringify(
-						statusCodesWhenCompleted,
-					)}.includes($response.statusCode) }}`;
-				} else if (pagination.paginationCompleteWhen === 'responseIsEmpty') {
-					continueExpression =
-						'={{ Array.isArray($response.body) ? $response.body.length : !!$response.body }}';
-				} else {
-					// Other
-					if (!pagination.completeExpression.length || pagination.completeExpression[0] !== '=') {
-						throw new NodeOperationError(this.getNode(), 'Invalid or empty Complete Expression');
-					}
-					continueExpression = `={{ !(${pagination.completeExpression.trim().slice(3, -2)}) }}`;
-				}
-
-				const paginationData: PaginationOptions = {
-					continue: continueExpression,
-					request: {},
-					requestInterval: pagination.requestInterval,
-				};
-
-				if (pagination.paginationMode === 'updateAParameterInEachRequest') {
-					// Iterate over all parameters and add them to the request
-					paginationData.request = {};
-					const { parameters } = pagination.parameters;
-					if (parameters.length === 1 && parameters[0].name === '' && parameters[0].value === '') {
-						throw new NodeOperationError(
-							this.getNode(),
-							"At least one entry with 'Name' and 'Value' filled must be included in 'Parameters' to use 'Update a Parameter in Each Request' mode ",
-						);
-					}
-					pagination.parameters.parameters.forEach((parameter, index) => {
-						if (!paginationData.request[parameter.type]) {
-							paginationData.request[parameter.type] = {};
-						}
-						const parameterName = parameter.name;
-						if (parameterName === '') {
-							throw new NodeOperationError(
-								this.getNode(),
-								`Parameter name must be set for parameter [${index + 1}] in pagination settings`,
-							);
-						}
-						const parameterValue = parameter.value;
-						if (parameterValue === '') {
-							throw new NodeOperationError(
-								this.getNode(),
-								`Some value must be provided for parameter [${
-									index + 1
-								}] in pagination settings, omitting it will result in an infinite loop`,
-							);
-						}
-						paginationData.request[parameter.type]![parameterName] = parameterValue;
-					});
-				} else if (pagination.paginationMode === 'responseContainsNextURL') {
-					paginationData.request.url = pagination.nextURL;
-				}
-
-				if (pagination.limitPagesFetched) {
-					paginationData.maxRequests = pagination.maxRequests;
-				}
-
-				if (responseFormat === 'file') {
-					paginationData.binaryResult = true;
-				}
-
-				const requestPromise = this.helpers.requestWithAuthenticationPaginated
-					.call(
-						this,
-						requestOptions,
-						itemIndex,
-						paginationData,
-						nodeCredentialType ?? genericCredentialType,
-					)
-					// TODO: Figure out x402 in paginated requests
-					.catch((error) => {
-						if (error instanceof NodeOperationError && error.type === 'invalid_url') {
-							const urlParameterName =
-								pagination.paginationMode === 'responseContainsNextURL' ? 'Next URL' : 'URL';
-							throw new NodeOperationError(this.getNode(), error.message, {
-								description: `Make sure the "${urlParameterName}" parameter evaluates to a valid URL.`,
-							});
-						}
-
-						throw error;
-					});
-				requestPromises.push(requestPromise);
-			} else if (authentication === 'genericCredentialType' || authentication === 'none') {
-				const httpRequestOptions = requestOptions as IHttpRequestOptions;
+			if (authentication === 'genericCredentialType' || authentication === 'none') {
 				if (oAuth1Api) {
 					const requestOAuth1 = this.helpers.httpRequestWithAuthentication
-						.call(this, 'oAuth1Api', httpRequestOptions)
-						.catch(async (response) => {
+						.call(this, 'oAuth1Api', requestOptions)
+						.then(async (response) => {
 							if (response.statusCode === 402) {
 								// Generate an x402 payment header
-								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
-								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+								const paymentHeader = await generateX402PaymentHeader.call(this, response.body);
+
+								// Add the x-payment header
 								requestOptions.headers!['x-payment'] = paymentHeader;
+
+								// Restore requestOptions.ignoreHttpStatusErrors
+								requestOptions.ignoreHttpStatusErrors = ignoreHttpStatusErrors;
+
 								return this.helpers.httpRequestWithAuthentication.call(
 									this,
 									'oAuth1Api',
-									httpRequestOptions,
+									requestOptions,
 								);
 							}
-							return;
+							return response;
 						});
 					requestPromises.push(requestOAuth1);
 				} else if (oAuth2Api) {
 					const requestOAuth2 = this.helpers.httpRequestWithAuthentication
-						.call(this, 'oAuth2Api', httpRequestOptions, {
+						.call(this, 'oAuth2Api', requestOptions, {
 							oauth2: { tokenType: 'Bearer' },
 						})
-						.catch(async (response) => {
+						.then(async (response) => {
 							if (response.statusCode === 402) {
 								// Generate an x402 payment header
-								const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
-								const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+								const paymentHeader = await generateX402PaymentHeader.call(this, response.body);
+
+								// Add the x-payment header
 								requestOptions.headers!['x-payment'] = paymentHeader;
+
+								// Restore requestOptions.ignoreHttpStatusErrors
+								requestOptions.ignoreHttpStatusErrors = ignoreHttpStatusErrors;
+
 								return this.helpers.httpRequestWithAuthentication.call(
 									this,
 									'oAuth2Api',
-									httpRequestOptions,
+									requestOptions,
 									{
 										oauth2: { tokenType: 'Bearer' },
 									},
 								);
 							}
-							return;
+							return response;
 						});
 					requestPromises.push(requestOAuth2);
 				} else {
 					// bearerAuth, queryAuth, headerAuth, digestAuth, none
-					const request = this.helpers.httpRequest(httpRequestOptions).catch(async (response) => {
+					const request = this.helpers.httpRequest(requestOptions).then(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
-							const decodedError = JSON.parse(response.error) as IX402ErrorResponse;
-							const paymentHeader = await generateX402PaymentHeader.call(this, decodedError);
+							const paymentHeader = await generateX402PaymentHeader.call(this, response.body);
+
+							// Add the x-payment header
 							requestOptions.headers!['x-payment'] = paymentHeader;
-							return this.helpers.httpRequest(httpRequestOptions);
+
+							// Restore requestOptions.ignoreHttpStatusErrors
+							requestOptions.ignoreHttpStatusErrors = ignoreHttpStatusErrors;
+
+							return this.helpers.httpRequest(requestOptions);
 						}
-						return;
+						return response;
 					});
 					requestPromises.push(request);
 				}
@@ -1087,7 +968,6 @@ async function executeX402RequestOperation(
 				const additionalOAuth2Options = getOAuth2AdditionalParameters(nodeCredentialType);
 
 				// service-specific cred: OAuth1, OAuth2, plain
-
 				const requestWithAuthentication = this.helpers.httpRequestWithAuthentication
 					.call(
 						this,
@@ -1098,8 +978,14 @@ async function executeX402RequestOperation(
 					.then(async (response) => {
 						if (response.statusCode === 402) {
 							// Generate an x402 payment header
-							const paymentHeader = await generateX402PaymentHeader.call(this, response);
+							const paymentHeader = await generateX402PaymentHeader.call(this, response.body);
+
+							// Add the x-payment header
 							requestOptions.headers!['x-payment'] = paymentHeader;
+
+							// Restore requestOptions.ignoreHttpStatusErrors
+							requestOptions.ignoreHttpStatusErrors = ignoreHttpStatusErrors;
+
 							return this.helpers.httpRequestWithAuthentication.call(
 								this,
 								nodeCredentialType!,
@@ -1109,7 +995,6 @@ async function executeX402RequestOperation(
 						}
 						return response;
 					});
-				requestWithAuthentication.catch(() => {});
 				requestPromises.push(requestWithAuthentication);
 			}
 		} catch (error) {
@@ -1223,63 +1108,30 @@ async function executeX402RequestOperation(
 
 			// eslint-disable-next-line prefer-const
 			for (let [index, response] of Object.entries(responses)) {
-				if (response?.request?.constructor.name === 'ClientRequest') delete response.request;
-
 				if (this.getMode() === 'manual' && index === '0') {
 					// For manual executions save the first response in the context
 					// so that we can use it in the frontend and so make it easier for
 					// the users to create the required pagination expressions
 					const nodeContext = this.getContext('node');
-					if (pagination && pagination.paginationMode !== 'off') {
-						nodeContext.response = responseData.value[0];
-					} else {
-						nodeContext.response = responseData.value;
-					}
+					nodeContext.response = responseData.value;
 				}
 
 				const responseContentType = response.headers['content-type'] ?? '';
 				if (autoDetectResponseFormat) {
 					if (responseContentType.includes('application/json')) {
 						responseFormat = 'json';
-						if (!response.__bodyResolved) {
-							const neverError = this.getNodeParameter(
-								'options.response.response.neverError',
-								0,
-								false,
-							) as boolean;
-
-							const data = await this.helpers.binaryToString(response.body as Buffer | Readable);
-							response.body = jsonParse(data, {
-								...(neverError
-									? { fallbackValue: {} }
-									: { errorMessage: 'Invalid JSON in response body' }),
-							});
-						}
 					} else if (binaryContentTypes.some((e) => responseContentType.includes(e))) {
 						responseFormat = 'file';
 					} else {
 						responseFormat = 'text';
-						if (!response.__bodyResolved) {
-							const data = await this.helpers.binaryToString(response.body as Buffer | Readable);
-							response.body = !data ? undefined : data;
-						}
 					}
 				}
-				// This is a no-op outside of tool usage
-				// TODO: Restore this
-				// const optimizeResponse = configureResponseOptimizer(this, itemIndex);
-				const optimizeResponse = (body: any) => body;
-
 				if (autoDetectResponseFormat && !fullResponse) {
 					delete response.headers;
 					delete response.statusCode;
 					delete response.statusMessage;
 				}
-				if (!fullResponse) {
-					response = optimizeResponse(response.body);
-				} else {
-					response.body = optimizeResponse(response.body);
-				}
+
 				if (responseFormat === 'file') {
 					const outputPropertyName = this.getNodeParameter(
 						'options.response.response.outputPropertyName',
@@ -1372,18 +1224,6 @@ async function executeX402RequestOperation(
 							returnItem[property] = response[property];
 						}
 
-						if (responseFormat === 'json' && typeof returnItem.body === 'string') {
-							try {
-								returnItem.body = JSON.parse(returnItem.body);
-							} catch (error) {
-								throw new NodeOperationError(
-									this.getNode(),
-									'Response body is not valid JSON. Change "Response Format" to "Text"',
-									{ itemIndex },
-								);
-							}
-						}
-
 						returnItems.push({
 							json: returnItem,
 							pairedItem: {
@@ -1391,20 +1231,6 @@ async function executeX402RequestOperation(
 							},
 						});
 					} else {
-						if (responseFormat === 'json' && typeof response === 'string') {
-							try {
-								if (typeof response !== 'object') {
-									response = JSON.parse(response);
-								}
-							} catch (error) {
-								throw new NodeOperationError(
-									this.getNode(),
-									'Response body is not valid JSON. Change "Response Format" to "Text"',
-									{ itemIndex },
-								);
-							}
-						}
-
 						if (Array.isArray(response)) {
 							response.forEach((item) =>
 								returnItems.push({
@@ -1466,6 +1292,10 @@ async function generateX402PaymentHeader(
 ): Promise<string> {
 	// We are going to just use the first payment config for now.
 	const paymentConfig = response.accepts[0];
+
+	this.logger.info(
+		`x402 Payment Requested, ${paymentConfig.maxAmountRequired} of token ${paymentConfig.asset} requested`,
+	);
 
 	if (!paymentConfig) {
 		throw new NodeOperationError(this.getNode(), 'No payment config found');
