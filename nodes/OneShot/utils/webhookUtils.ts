@@ -69,9 +69,9 @@ export const getResponseHeaders = (parameters: WebhookParameters) => {
 	let responseHeaders = parameters.options.responseHeaders;
 
 	try {
-		const x402RefundsContactEmail = parameters.options.x402RefundsContactEmail;
+		const x402RefundsHeader = getX402RefundHeader(parameters.options.x402RefundsContactEmail);
 
-		if (x402RefundsContactEmail == null) {
+		if (x402RefundsHeader == null) {
 			return responseHeaders;
 		}
 
@@ -85,17 +85,12 @@ export const getResponseHeaders = (parameters: WebhookParameters) => {
 
 		const entries = responseHeaders.entries!;
 
-		// Create the link header content.
-		const refundContact = `<mailto:${x402RefundsContactEmail}>; rel="https://x402refunds.com/rel/refund-contact"`;
-		const refundRequest =
-			'<https://api.x402refunds.com/v1/refunds>; rel="https://x402refunds.com/rel/refund-request"; type="application/json"';
-
-		const x402LinkHeader = `${refundContact}, ${refundRequest}`;
-
 		const existingLinkIndex = entries.findIndex((entry) => entry.name?.toLowerCase() === 'link');
 		if (existingLinkIndex >= 0) {
 			const existing = entries[existingLinkIndex];
-			existing.value = existing.value ? `${existing.value}, ${x402LinkHeader}` : x402LinkHeader;
+			existing.value = existing.value
+				? `${existing.value}, ${x402RefundsHeader}`
+				: x402RefundsHeader;
 
 			return responseHeaders;
 		}
@@ -103,13 +98,24 @@ export const getResponseHeaders = (parameters: WebhookParameters) => {
 		// No existing link header so we need to add it
 		entries.push({
 			name: 'Link',
-			value: x402LinkHeader,
+			value: x402RefundsHeader,
 		});
 		return responseHeaders;
 	} catch (e) {
 		return responseHeaders;
 	}
 };
+
+export function getX402RefundHeader(x402RefundsContactEmail?: string): string | null {
+	if (x402RefundsContactEmail == null || x402RefundsContactEmail === '') {
+		return null;
+	}
+	const refundContact = `<mailto:${x402RefundsContactEmail}>; rel="https://x402refunds.com/rel/refund-contact"`;
+	const refundRequest =
+		'<https://api.x402refunds.com/v1/refunds>; rel="https://x402refunds.com/rel/refund-request"; type="application/json"';
+
+	return `${refundContact}, ${refundRequest}`;
+}
 
 export const configuredOutputs = (parameters: WebhookParameters) => {
 	const httpMethod = parameters.httpMethod;

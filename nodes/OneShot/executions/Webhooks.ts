@@ -7,7 +7,7 @@ import {
 import { verifyAsync } from '../crypto/ED25519';
 import { getX402Supported, settleX402Payment, verifyX402Payment } from './x402';
 import { IPaymentPayload, IPaymentRequirements, IX402ErrorResponse } from '../types/1shot';
-import { isIpWhitelisted, setupOutputConnection } from '../utils/webhookUtils';
+import { getX402RefundHeader, isIpWhitelisted, setupOutputConnection } from '../utils/webhookUtils';
 // import { rm, } from 'fs/promises';
 import type * as express from 'express';
 
@@ -252,7 +252,12 @@ async function handleX402Webhook(
 	// TODO: Agent thinks this should not have the negation on it, I think it's right, but it currently works.
 	const xPaymentHeader = headers['x-payment'];
 	if (!xPaymentHeader == null || typeof xPaymentHeader !== 'string') {
-		return generateX402Error(resp, 'No x-payment header provided', paymentRequirements);
+		return generateX402Error(
+			resp,
+			'No x-payment header provided',
+			paymentRequirements,
+			options.x402RefundsContactEmail,
+		);
 	}
 
 	// try to decode the x-payment header if it exists
@@ -265,7 +270,12 @@ async function handleX402Webhook(
 
 		const validation = validateXPayment(decodedXPaymentJson);
 		if (validation != 'valid') {
-			return generateX402Error(resp, 'x-payment header is not valid', paymentRequirements);
+			return generateX402Error(
+				resp,
+				'x-payment header is not valid',
+				paymentRequirements,
+				options.x402RefundsContactEmail,
+			);
 		}
 
 		const verification = verifyPaymentDetails(decodedXPaymentJson, paymentRequirements);
@@ -274,6 +284,7 @@ async function handleX402Webhook(
 				resp,
 				`x-payment header is not valid for reasons: ${verification.errors}`,
 				paymentRequirements,
+				options.x402RefundsContactEmail,
 			);
 		}
 
@@ -295,6 +306,7 @@ async function handleX402Webhook(
 				resp,
 				`x-payment verification failed: ${verifyResponse.invalidReason}`,
 				paymentRequirements,
+				options.x402RefundsContactEmail,
 			);
 		}
 
@@ -315,6 +327,7 @@ async function handleX402Webhook(
 					resp,
 					`x-payment settlement failed: ${settleResponse.error}`,
 					paymentRequirements,
+					options.x402RefundsContactEmail,
 				);
 			}
 
@@ -328,6 +341,7 @@ async function handleX402Webhook(
 				paymentRequirements,
 				decodedXPaymentJson,
 				prepareOutput,
+				options.x402RefundsContactEmail,
 			);
 		} catch (error) {
 			this.logger.error('Error in x402 webhook settlement, moving on...', error);
@@ -340,6 +354,7 @@ async function handleX402Webhook(
 				paymentRequirements,
 				decodedXPaymentJson,
 				prepareOutput,
+				options.x402RefundsContactEmail,
 			);
 		}
 	} catch (error) {
@@ -349,6 +364,7 @@ async function handleX402Webhook(
 			resp,
 			`No x-payment header provided: ${error.message}`,
 			paymentRequirements,
+			options.x402RefundsContactEmail,
 		);
 	}
 }
@@ -362,6 +378,7 @@ function generateResponse(
 	paymentRequirements: IPaymentRequirements[],
 	paymentPayload: IPaymentPayload,
 	prepareOutput: (data: INodeExecutionData) => INodeExecutionData[][],
+	x402RefundsContactEmail?: string,
 ) {
 	const response: INodeExecutionData = {
 		json: {
@@ -377,13 +394,25 @@ function generateResponse(
 	if (responseMode === 'streaming') {
 		const res = context.getResponseObject();
 
+		const x402RefundsHeader = getX402RefundHeader(x402RefundsContactEmail);
+
 		// Set up streaming response headers
-		res.writeHead(200, {
-			'Content-Type': 'application/json; charset=utf-8',
-			'Transfer-Encoding': 'chunked',
-			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive',
-		});
+		if (x402RefundsHeader != null) {
+			res.writeHead(200, {
+				'Content-Type': 'application/json; charset=utf-8',
+				'Transfer-Encoding': 'chunked',
+				'Cache-Control': 'no-cache',
+				Link: x402RefundsHeader,
+				Connection: 'keep-alive',
+			});
+		} else {
+			res.writeHead(200, {
+				'Content-Type': 'application/json; charset=utf-8',
+				'Transfer-Encoding': 'chunked',
+				'Cache-Control': 'no-cache',
+				Connection: 'keep-alive',
+			});
+		}
 
 		// Flush headers immediately
 		res.flushHeaders();
@@ -404,8 +433,17 @@ function generateX402Error(
 	resp: express.Response,
 	errorMessage: string,
 	paymentRequirements: IPaymentRequirements[],
+	x402RefundsContactEmail?: string,
 ): IWebhookResponseData {
-	resp.writeHead(402, { 'Content-Type': 'application/json' });
+	const x402RefundsHeader = getX402RefundHeader(x402RefundsContactEmail);
+	if (x402RefundsHeader != null) {
+		resp.writeHead(402, {
+			'Content-Type': 'application/json',
+			Link: x402RefundsHeader,
+		});
+	} else {
+		resp.writeHead(402, { 'Content-Type': 'application/json' });
+	}
 	resp.end(
 		JSON.stringify({
 			x402Version: 1,
